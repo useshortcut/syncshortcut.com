@@ -1,14 +1,13 @@
-import { GENERAL, GITHUB, LINEAR, SHARED } from "../constants";
-import { LinearWebhookPayload, MilestoneState } from "../../typings";
+import { GENERAL, GITHUB, SHORTCUT, SHARED } from "../constants";
+import { ShortcutWebhookPayload, MilestoneState } from "../../typings/shortcut";
+import { Platform } from "../../typings/platform";
 import prisma from "../../prisma";
 import {
     decrypt,
-    getAttachmentQuery,
     getSyncFooter,
     isNumber,
     skipReason
 } from "../index";
-import { Cycle, LinearClient, Project } from "@linear/sdk";
 import {
     applyLabel,
     createComment,
@@ -18,39 +17,41 @@ import {
     upsertUser
 } from "../../pages/api/utils";
 import got from "got";
-import { inviteMember } from "../linear";
 import { components } from "@octokit/openapi-types";
-import { linearQuery } from "../apollo";
-import {
-    createMilestone,
-    getGithubFooterWithLinearCommentId,
-    setIssueMilestone
-} from "../github";
+import { createMilestone, getGithubFooterWithShortcutCommentId, setIssueMilestone } from "../github";
 import { ApiError, getIssueUpdateError } from "../errors";
 import { Issue, User } from "@octokit/webhooks-types";
+import { shortcutQuery, getAttachmentQuery } from "../api/shortcut-query";
 
-export async function linearWebhookHandler(
-    body: LinearWebhookPayload,
-    originIp: string
-) {
-    if (!LINEAR.IP_ORIGINS.includes(`${originIp || ""}`)) {
+const SHORTCUT_IP_ORIGINS = [
+    "35.231.147.226",
+    "35.231.147.227",
+    "35.231.147.228",
+    "35.231.147.229",
+    "35.231.147.230",
+    "35.231.147.231"
+];
+
+export async function shortcutWebhookHandler(
+    body: ShortcutWebhookPayload,
+    originIp?: string
+): Promise<string> {
+    if (!SHORTCUT_IP_ORIGINS.includes(`${originIp || ""}`)) {
         throw new Error(
-            `Could not verify Linear webhook from ${originIp || ""}`
+            `Could not verify Shortcut webhook from ${originIp || ""}`
         );
     }
 
     const {
         action,
-        updatedFrom,
-        data,
-        url,
-        type: actionType
-    }: LinearWebhookPayload = body;
+        changes,
+        primary_id,
+        member_id,
+        model,
+        references
+    } = body;
 
     const syncs = await prisma.sync.findMany({
-        where: {
-            linearUserId: data.userId ?? data.creatorId
-        },
         include: {
             LinearTeam: true,
             GitHubRepo: true
@@ -58,221 +59,162 @@ export async function linearWebhookHandler(
     });
 
     const sync = syncs.find(s => {
-        // For comment events the teamId property from linear is not passed,
-        // so we fallback to only match on user
-        const isTeamMatching = data.teamId
-            ? s.linearTeamId === data.teamId
-            : true;
-        const isUserMatching =
-            s.linearUserId === (data.userId ?? data.creatorId);
+        const isTeamMatching = references.some(ref => ref.entity_type === 'team' && s.linearTeamId === ref.id);
+        const isUserMatching = s.linearUserId === member_id;
 
         return isUserMatching && isTeamMatching;
     });
 
     if (syncs.length === 0 || !sync) {
-        const reason = `Linear user ${data?.userId || ""} not found in syncs.`;
+        const reason = `Shortcut user ${member_id || ""} not found in syncs.`;
         console.log(reason);
         return reason;
     }
 
     if (!sync?.LinearTeam || !sync?.GitHubRepo) {
-        const reason = `Repo not found for ${data?.teamId || ""}`;
+        const reason = `Repo not found for ${references.find(ref => ref.entity_type === 'team')?.id || ""}`;
         console.log(reason);
         throw new ApiError(reason, 404);
     }
 
     const {
-        linearUserId,
-        linearTeamId,
-        linearApiKey,
-        linearApiKeyIV,
         githubApiKey,
-        githubUserId,
         githubApiKeyIV,
-        LinearTeam: { publicLabelId, doneStateId, canceledStateId },
         GitHubRepo: { repoName: repoFullName, repoId }
     } = sync;
 
-    const linearKey = process.env.LINEAR_API_KEY
-        ? process.env.LINEAR_API_KEY
-        : decrypt(linearApiKey, linearApiKeyIV);
+    const shortcutKey = process.env.SHORTCUT_API_KEY;
 
-    const linear = new LinearClient({
-        apiKey: linearKey,
-        headers: {
-            ...LINEAR.PUBLIC_QUERY_HEADERS
-        }
-    });
+    // Get story data either directly or from references
+    const storyId = model === 'story' ? primary_id : references?.find(ref => ref.entity_type === 'story')?.id;
+    const story = await shortcutQuery(`/stories/${storyId}`, shortcutKey);
 
-    const ticketName = `${data.team?.key ?? ""}-${data.number}`;
+    if (!story || story.error) {
+        const reason = `Could not find Shortcut story ${storyId}`;
+        console.log(reason);
+        throw new ApiError(reason, 404);
+    }
+
+    const ticketName = `${story.project?.abbreviation ?? "SC"}-${story.id}`;
 
     const githubKey = process.env.GITHUB_API_KEY
         ? process.env.GITHUB_API_KEY
         : decrypt(githubApiKey, githubApiKeyIV);
 
-    const githubAuthHeader = `token ${githubKey}`;
-    const userAgentHeader = `${repoFullName}, linear-github-sync`;
-    const issuesEndpoint = `https://api.github.com/repos/${repoFullName}/issues`;
+    const githubAuthHeader = `Bearer ${githubKey}`;
+    const userAgentHeader = GITHUB.TOKEN_NOTE;
+
     const defaultHeaders = {
         Authorization: githubAuthHeader,
-        "User-Agent": userAgentHeader
+        "User-Agent": userAgentHeader,
+        Accept: "application/vnd.github+json"
     };
 
-    // Map the user's Linear username to their GitHub username if not yet mapped
+    // Map the user's Shortcut username to their GitHub username if not yet mapped
     await upsertUser(
-        linear,
-        githubUserId,
-        linearUserId,
+        shortcutKey,
+        member_id,
+        story.owner_ids?.[0] || "",
         userAgentHeader,
         githubAuthHeader
     );
 
     const syncedIssue = await prisma.syncedIssue.findFirst({
         where: {
-            linearIssueId: data.id,
-            linearTeamId: data.teamId
+            shortcutStoryId: storyId.toString(),
+            shortcutProjectId: story.project_id?.toString()
         },
         include: { GitHubRepo: true }
     });
 
     if (action === "update") {
-        // Label updated on an already-Public issue
-        if (updatedFrom.labelIds?.includes(publicLabelId)) {
-            if (!syncedIssue) {
-                console.log(skipReason("label", ticketName));
-                return skipReason("label", ticketName);
+        // Handle label changes
+        if (changes?.labels) {
+            const oldLabels = changes.labels.old || [];
+            const newLabels = changes.labels.new || [];
+
+            // Handle removed labels
+            for (const oldLabel of oldLabels) {
+                if (!newLabels.find(l => l.id === oldLabel.id)) {
+                    const removedLabelResponse = await got.delete(
+                        `${GITHUB.REPO_ENDPOINT}/${syncedIssue.GitHubRepo.repoName}/issues/${syncedIssue.githubIssueNumber}/labels/${oldLabel.name}`,
+                        { headers: defaultHeaders }
+                    );
+
+                    if (removedLabelResponse.statusCode > 201) {
+                        const reason = `Failed to remove label "${oldLabel.name}" from ${syncedIssue.githubIssueId}.`;
+                        console.log(reason);
+                        throw new ApiError(reason, 403);
+                    } else {
+                        console.log(
+                            `Removed label "${oldLabel.name}" from ${syncedIssue.githubIssueId}.`
+                        );
+                    }
+                }
             }
 
-            // Label(s) removed
-            if (data.labelIds.length < updatedFrom.labelIds.length) {
-                const removedLabelId = updatedFrom.labelIds.find(
-                    id => !data.labelIds.includes(id)
-                );
-
-                // Public label removed
-                if (removedLabelId === publicLabelId) {
-                    await prisma.syncedIssue.delete({
-                        where: { id: syncedIssue.id }
-                    });
-
-                    const reason = `Deleted synced issue ${ticketName} after Public label removed.`;
-                    console.log(reason);
-                    return reason;
-                }
-
-                const label = await linear.issueLabel(removedLabelId);
-                if (!label) {
-                    throw new ApiError(
-                        `Could not find label ${removedLabelId}.`,
-                        403
-                    );
-                }
-
-                const removedLabelResponse = await got.delete(
-                    `${GITHUB.REPO_ENDPOINT}/${syncedIssue.GitHubRepo.repoName}/issues/${syncedIssue.githubIssueNumber}/labels/${label.name}`,
-                    { headers: defaultHeaders }
-                );
-
-                if (removedLabelResponse.statusCode > 201) {
-                    const reason = `Failed to remove label "${label.name}" from ${syncedIssue.githubIssueId}.`;
-                    console.log(reason);
-                    throw new ApiError(reason, 403);
-                } else {
-                    console.log(
-                        `Removed label "${label.name}" from ${syncedIssue.githubIssueId}.`
-                    );
-                }
-            } else if (data.labelIds.length > updatedFrom.labelIds.length) {
-                const addedLabelId = data.labelIds.find(
-                    id => !updatedFrom.labelIds.includes(id)
-                );
-
-                const label = await linear.issueLabel(addedLabelId);
-                if (!label) {
-                    throw new ApiError(
-                        `Could not find label ${addedLabelId}.`,
-                        403
-                    );
-                }
-
-                const { createdLabel, error: createLabelError } =
-                    await createLabel({
-                        repoFullName,
-                        label,
+            // Handle added labels
+            for (const newLabel of newLabels) {
+                if (!oldLabels.find(l => l.id === newLabel.id)) {
+                    const { createdLabel, error: createLabelError } = await createLabel({
+                        repoFullName: syncedIssue.GitHubRepo.repoName,
+                        label: {
+                            name: newLabel.name,
+                            color: newLabel.color.replace('#', '')
+                        },
                         githubAuthHeader,
                         userAgentHeader
                     });
 
-                if (createLabelError) {
-                    console.log("Could not create label.");
-                    throw new ApiError("Could not create label.", 403);
-                }
+                    if (createLabelError) {
+                        console.log(
+                            `Could not create label "${newLabel.name}" in ${syncedIssue.GitHubRepo.repoName}.`
+                        );
+                        continue;
+                    }
 
-                const labelName = createdLabel ? createdLabel.name : label.name;
+                    const labelName = createdLabel ? createdLabel.name : newLabel.name;
 
-                const { error: applyLabelError } = await applyLabel({
-                    repoFullName: syncedIssue.GitHubRepo.repoName,
-                    issueNumber: syncedIssue.githubIssueNumber,
-                    labelNames: [labelName],
-                    githubAuthHeader,
-                    userAgentHeader
-                });
+                    const { error: applyLabelError } = await applyLabel({
+                        repoFullName: syncedIssue.GitHubRepo.repoName,
+                        issueNumber: syncedIssue.githubIssueNumber,
+                        labelNames: [labelName],
+                        githubAuthHeader,
+                        userAgentHeader
+                    });
 
-                if (applyLabelError) {
-                    const reason = `Failed to apply label "${labelName}" to ${syncedIssue.githubIssueId}.`;
-                    console.log(reason);
-                    throw new ApiError(reason, 403);
-                } else {
-                    console.log(
-                        `Applied label "${labelName}" to issue #${syncedIssue.githubIssueId}.`
-                    );
-                }
-            }
-        } else if (
-            updatedFrom.labelIds &&
-            !updatedFrom.labelIds?.includes(publicLabelId) &&
-            data.labelIds?.includes(publicLabelId)
-        ) {
-            // Public label added to an issue
-            if (syncedIssue) {
-                const reason = `Skipping issue create: ${data.id} exists as ${syncedIssue.githubIssueId}`;
-                console.log(reason);
-                return reason;
-            }
-
-            let markdown = data.description;
-
-            // Re-fetching the issue description returns it with public image URLs
-            if (markdown?.match(GENERAL.INLINE_IMG_TAG_REGEX)) {
-                const publicIssue = await linear.issue(data.id);
-                if (publicIssue?.description) {
-                    markdown = publicIssue.description;
+                    if (applyLabelError) {
+                        console.log(
+                            `Could not apply label "${labelName}" to ${syncedIssue.githubIssueId}.`
+                        );
+                    } else {
+                        console.log(
+                            `Applied label "${labelName}" to ${syncedIssue.githubIssueId}.`
+                        );
+                    }
                 }
             }
-
-            const modifiedDescription = await prepareMarkdownContent(
-                markdown,
-                "linear"
-            );
+        }
+    }
 
             const assignee = await prisma.user.findFirst({
-                where: { linearUserId: data.assigneeId },
+                where: { linearUserId: story.owner_ids?.[0] },
                 select: { githubUsername: true }
             });
 
-            const createdIssueResponse = await got.post(issuesEndpoint, {
-                headers: defaultHeaders,
-                json: {
-                    title: `[${ticketName}] ${data.title}`,
-                    body: `${
-                        modifiedDescription ?? ""
-                    }\n\n<sub>${getSyncFooter()} | [${ticketName}](${url})</sub>`,
-                    ...(data.assigneeId &&
-                        assignee?.githubUsername && {
-                            assignees: [assignee?.githubUsername]
+            const createdIssueResponse = await got.post(
+                `${GITHUB.REPO_ENDPOINT}/${repoFullName}/issues`,
+                {
+                    headers: defaultHeaders,
+                    json: {
+                        title: `[${ticketName}] ${story.name}`,
+                        body: modifiedDescription,
+                        ...(assignee?.githubUsername && {
+                            assignee: assignee.githubUsername
                         })
+                    }
                 }
-            });
+            );
 
             if (
                 !syncs.some(
@@ -297,51 +239,30 @@ export async function linearWebhookHandler(
                 createdIssueResponse.body
             );
 
-            const linearIssue = await linear.issue(data.id);
+            const attachmentUrl = `${GITHUB.BASE_URL}/${repoFullName}/issues/${createdIssueData.number}`;
+            await shortcutQuery(`/stories/${story.id}/comments`, shortcutKey, "POST", JSON.stringify({
+                text: `Created GitHub issue: ${attachmentUrl}`,
+                external_id: createdIssueData.id
+            }));
 
-            const attachmentQuery = getAttachmentQuery(
-                data.id,
-                createdIssueData.number,
-                repoFullName
-            );
-
-            await Promise.all([
-                linearQuery(attachmentQuery, linearKey).then(response => {
-                    if (!response?.data?.attachmentCreate?.success) {
-                        console.log(
-                            `Failed to add attachment to ${ticketName} for ${
-                                createdIssueData.id
-                            }: ${response?.error || ""}.`
-                        );
-                    } else {
-                        console.log(
-                            `Created attachment on ${ticketName} for ${createdIssueData.id}.`
-                        );
-                    }
-                }),
-                prisma.syncedIssue.create({
-                    data: {
-                        githubIssueId: createdIssueData.id,
-                        linearIssueId: data.id,
-                        linearTeamId: data.teamId,
-                        githubIssueNumber: createdIssueData.number,
-                        linearIssueNumber: data.number,
-                        githubRepoId: repoId
-                    }
-                })
-            ] as Promise<void>[]);
+            await prisma.syncedIssue.create({
+                data: {
+                    githubIssueId: createdIssueData.id,
+                    shortcutStoryId: story.id,
+                    shortcutTeamId: story.group_id,
+                    githubIssueNumber: createdIssueData.number,
+                    shortcutStoryNumber: story.number,
+                    githubRepoId: repoId
+                }
+            });
 
             // Apply all labels to newly-created issue
-            const labelIds = data.labelIds.filter(id => id != publicLabelId);
-            const labelNames: string[] = [];
+            let labelNames: string[] = [];
+            const labelIds = story.labels?.map(label => label.id) || [];
             for (const labelId of labelIds) {
-                if (labelId === publicLabelId) continue;
-
-                const label = await linear.issueLabel(labelId);
+                const label = await shortcutQuery(`/labels/${labelId}`, shortcutKey);
                 if (!label) {
-                    console.log(
-                        `Could not find label ${labelId} for ${ticketName}.`
-                    );
+                    console.log(`Could not find label ${labelId}`);
                     continue;
                 }
 
@@ -365,8 +286,8 @@ export async function linearWebhookHandler(
             }
 
             // Add priority label if applicable
-            if (!!data.priority && SHARED.PRIORITY_LABELS[data.priority]) {
-                const priorityLabel = SHARED.PRIORITY_LABELS[data.priority];
+            if (!!story.priority && SHARED.PRIORITY_LABELS[story.priority]) {
+                const priorityLabel = SHARED.PRIORITY_LABELS[story.priority];
                 const { createdLabel, error } = await createLabel({
                     repoFullName,
                     label: priorityLabel,
@@ -389,7 +310,7 @@ export async function linearWebhookHandler(
 
             const { error: applyLabelError } = await applyLabel({
                 repoFullName,
-                issueNumber: BigInt(createdIssueData.number),
+                issueNumber: BigInt(story.number),
                 labelNames,
                 githubAuthHeader,
                 userAgentHeader
@@ -397,43 +318,43 @@ export async function linearWebhookHandler(
 
             if (applyLabelError) {
                 console.log(
-                    `Failed to apply labels to ${createdIssueData.id} in ${repoFullName}.`
+                    `Failed to apply labels to ${story.id} in ${repoFullName}.`
                 );
             } else {
                 console.log(
-                    `Applied labels to ${createdIssueData.id} in ${repoFullName}.`
+                    `Applied labels to ${story.id} in ${repoFullName}.`
                 );
             }
 
             // Sync all comments on the issue
-            const linearComments = await linearIssue.comments().then(comments =>
+            const shortcutComments = await shortcutQuery(`/stories/${story.id}/comments`, shortcutKey).then(comments =>
                 Promise.all(
-                    comments.nodes.map(comment =>
-                        comment.user?.then(user => ({
+                    comments.map(comment =>
+                        Promise.resolve({
                             comment,
-                            user
-                        }))
+                            user: comment.author
+                        })
                     )
                 )
             );
 
-            for (const linearComment of linearComments) {
-                if (!linearComment) continue;
+            for (const shortcutComment of shortcutComments) {
+                if (!shortcutComment) continue;
 
-                const { comment, user } = linearComment;
+                const { comment, user } = shortcutComment;
 
                 const modifiedComment = await replaceMentions(
                     comment.body,
-                    "linear"
+                    "shortcut" as Platform
                 );
-                const footer = getGithubFooterWithLinearCommentId(
+                const footer = getGithubFooterWithShortcutCommentId(
                     user.displayName,
                     comment.id
                 );
 
                 const { error: commentError } = await createComment({
                     repoFullName,
-                    issueNumber: BigInt(createdIssueData.number),
+                    issueNumber: BigInt(story.number),
                     body: `${modifiedComment || ""}${footer}`,
                     githubAuthHeader,
                     userAgentHeader
@@ -441,11 +362,11 @@ export async function linearWebhookHandler(
 
                 if (commentError) {
                     console.log(
-                        `Failed to add comment to ${createdIssueData.id} for ${ticketName}.`
+                        `Failed to add comment to ${story.id} for ${ticketName}.`
                     );
                 } else {
                     console.log(
-                        `Created comment on ${createdIssueData.id} for ${ticketName}.`
+                        `Created comment on ${story.id} for ${ticketName}.`
                     );
                 }
             }
@@ -459,13 +380,20 @@ export async function linearWebhookHandler(
         }
 
         // Title change
-        if (updatedFrom.title && actionType === "Issue") {
+        if (changes?.title?.new && model === "story") {
+            const story = await shortcutQuery(`/stories/${primary_id}`, shortcutKey);
+            if (!story || story.error) {
+                const reason = `Could not find story ${primary_id}`;
+                console.log(reason);
+                throw new ApiError(reason, 404);
+            }
+
             const updatedIssueResponse = await got.patch(
                 `${GITHUB.REPO_ENDPOINT}/${syncedIssue.GitHubRepo.repoName}/issues/${syncedIssue.githubIssueNumber}`,
                 {
                     headers: defaultHeaders,
                     json: {
-                        title: `[${ticketName}] ${data.title}`
+                        title: `[${ticketName}] ${story.name}`
                     }
                 }
             );
@@ -474,32 +402,32 @@ export async function linearWebhookHandler(
                 console.log(
                     getIssueUpdateError(
                         "title",
-                        data,
+                        story,
                         syncedIssue,
                         updatedIssueResponse
                     )
                 );
             } else {
                 console.log(
-                    `Updated GH issue title for ${data.id} on ${syncedIssue.githubIssueId}`
+                    `Updated GH issue title for ${story.id} on ${syncedIssue.githubIssueId}`
                 );
             }
         }
 
         // Description change
-        if (updatedFrom.description && actionType === "Issue") {
-            let markdown = data.description;
-
-            if (markdown?.match(GENERAL.INLINE_IMG_TAG_REGEX)) {
-                const publicIssue = await linear.issue(data.id);
-                if (publicIssue?.description) {
-                    markdown = publicIssue.description;
-                }
+        if (changes?.description?.new && model === "story") {
+            const story = await shortcutQuery(`/stories/${primary_id}`, shortcutKey);
+            if (!story || story.error) {
+                const reason = `Could not find story ${primary_id}`;
+                console.log(reason);
+                throw new ApiError(reason, 404);
             }
 
+            let markdown = story.description;
+
             const modifiedDescription = await prepareMarkdownContent(
-                markdown,
-                "linear"
+                markdown || "",
+                "shortcut" as Platform
             );
 
             const updatedIssueResponse = await got.patch(
@@ -507,9 +435,7 @@ export async function linearWebhookHandler(
                 {
                     headers: defaultHeaders,
                     json: {
-                        body: `${
-                            modifiedDescription ?? ""
-                        }\n\n<sub>${getSyncFooter()} | [${ticketName}](${url})</sub>`
+                        body: `${modifiedDescription}\n\n<sub>${getSyncFooter()} | [${ticketName}](${SHORTCUT.STORY_URL}/${story.id})</sub>`
                     }
                 }
             );
@@ -518,7 +444,7 @@ export async function linearWebhookHandler(
                 console.log(
                     getIssueUpdateError(
                         "description",
-                        data,
+                        story,
                         syncedIssue,
                         updatedIssueResponse
                     )
@@ -655,13 +581,21 @@ export async function linearWebhookHandler(
             }
         }
 
-        // State change (eg. "Open" to "Done")
-        if (updatedFrom.stateId) {
-            const state = [doneStateId, canceledStateId].includes(data.stateId)
+        // State change (eg. "Started" to "Done")
+        if (changes?.workflow_state_id) {
+            const workflowState = await shortcutQuery(
+                `/workflow-states/${changes.workflow_state_id.new}`,
+                shortcutKey
+            );
+
+            const state = workflowState.name === SHORTCUT.TICKET_STATES.done ||
+                         workflowState.name === SHORTCUT.TICKET_STATES.archived
                 ? "closed"
                 : "open";
-            const reason =
-                doneStateId === data.stateId ? "completed" : "not_planned";
+
+            const reason = workflowState.name === SHORTCUT.TICKET_STATES.archived
+                ? "not_planned"
+                : "completed";
 
             const updatedIssueResponse = await got.patch(
                 `${GITHUB.REPO_ENDPOINT}/${syncedIssue.GitHubRepo.repoName}/issues/${syncedIssue.githubIssueNumber}`,
@@ -678,20 +612,20 @@ export async function linearWebhookHandler(
                 console.log(
                     getIssueUpdateError(
                         "state",
-                        data,
+                        story,
                         syncedIssue,
                         updatedIssueResponse
                     )
                 );
             } else {
                 console.log(
-                    `Updated GH issue state for ${data.id} on ${syncedIssue.githubIssueId}`
+                    `Updated GH issue state for ${story.id} on ${syncedIssue.githubIssueId}`
                 );
             }
         }
 
         // Assignee change
-        if ("assigneeId" in updatedFrom) {
+        if (changes?.owner_ids) {
             // Remove all assignees before re-assigning to avoid false re-assignment events
             const issueEndpoint = `${GITHUB.REPO_ENDPOINT}/${syncedIssue.GitHubRepo.repoName}/issues/${syncedIssue.githubIssueNumber}`;
 
@@ -705,10 +639,10 @@ export async function linearWebhookHandler(
             ).assignees?.map((assignee: User) => assignee?.login);
 
             // Set new assignee
-            const newAssignee = data?.assigneeId
+            const newAssignee = changes.owner_ids.new?.[0]
                 ? await prisma.user.findFirst({
                       where: {
-                          linearUserId: data?.assigneeId
+                          linearUserId: changes.owner_ids.new[0]
                       },
                       select: {
                           githubUsername: true
@@ -900,8 +834,8 @@ export async function linearWebhookHandler(
                 : estimateLabel.name;
 
             const { error: applyLabelError } = await applyLabel({
-                repoFullName: syncedIssue.GitHubRepo.repoName,
-                issueNumber: syncedIssue.githubIssueNumber,
+                repoFullName,
+                issueNumber: Number(syncedIssue?.githubIssueNumber),
                 labelNames: [labelName],
                 githubAuthHeader,
                 userAgentHeader
@@ -918,119 +852,86 @@ export async function linearWebhookHandler(
             }
         }
     } else if (action === "create") {
-        if (actionType === "Comment") {
+        if (model === "comment") {
             // Comment added
-
-            if (data.id.includes(GITHUB.UUID_SUFFIX) && data.issue) {
-                console.log(skipReason("comment", data.issue.id, true));
-                return skipReason("comment", data.issue.id, true);
+            if (!syncedIssue) {
+                console.log(skipReason("comment", ticketName));
+                return skipReason("comment", ticketName);
             }
 
-            // Overrides the outer-scope syncedIssue because comments do not come with teamId
-            const syncedIssueWithTeam = await prisma.syncedIssue.findFirst({
-                where: {
-                    linearIssueId: data.issueId
-                },
-                include: { GitHubRepo: true }
-            });
-
-            if (!syncedIssueWithTeam) {
-                console.log(
-                    skipReason("comment", `${data.team?.key}-${data.number}`)
-                );
-
-                return skipReason(
-                    "comment",
-                    `${data.team?.key}-${data.number}`
-                );
+            const comment = await shortcutQuery(`/comments/${primary_id}`, shortcutKey);
+            if (!comment || comment.error) {
+                const reason = `Could not find comment ${primary_id}`;
+                console.log(reason);
+                throw new ApiError(reason, 404);
             }
 
-            let modifiedBody = await replaceMentions(data.body, "linear");
+            let modifiedBody = await replaceMentions(comment.text, "shortcut");
 
-            // Re-fetching the comment  returns it with public image URLs
-            if (modifiedBody?.match(GENERAL.INLINE_IMG_TAG_REGEX)) {
-                const publicComment = await linear.comment(data.id);
-                modifiedBody = publicComment.body;
-            }
-
-            const footer = getGithubFooterWithLinearCommentId(
-                data.user?.name,
-                data.id
+            // Get the comment author
+            const author = await shortcutQuery(`/members/${comment.author_id}`, shortcutKey);
+            const footer = getGithubFooterWithShortcutCommentId(
+                author.name || "Unknown User",
+                comment.id.toString()
             );
 
             const { error: commentError } = await createComment({
-                repoFullName: syncedIssueWithTeam.GitHubRepo.repoName,
-                issueNumber: syncedIssueWithTeam.githubIssueNumber,
+                repoFullName: syncedIssue.GitHubRepo.repoName,
+                issueNumber: syncedIssue.githubIssueNumber,
                 body: `${modifiedBody || ""}${footer}`,
-                githubAuthHeader,
-                userAgentHeader
+                githubAuthHeader: defaultHeaders.Authorization,
+                userAgentHeader: defaultHeaders["User-Agent"]
             });
 
             if (commentError) {
                 console.log(
-                    `Failed to update GH issue state for ${data?.issue?.id} on ${syncedIssueWithTeam.githubIssueId}.`
+                    `Failed to create comment for ${story.id} on ${syncedIssue.githubIssueId}.`
                 );
             } else {
                 console.log(
-                    `Synced comment for ${syncedIssueWithTeam.githubIssueId}.`
+                    `Synced comment for ${syncedIssue.githubIssueId}.`
                 );
             }
-        } else if (actionType === "Issue") {
-            // Issue created
-
-            if (!data.labelIds?.includes(publicLabelId)) {
-                const reason = "Issue is not labeled as public";
+        } else if (model === "story") {
+            // Story created
+            if (!story.labels?.some(label => label.name === SHORTCUT.GITHUB_LABEL)) {
+                const reason = "Story is not labeled for GitHub sync";
                 console.log(reason);
                 return reason;
             }
 
             if (syncedIssue) {
-                const reason = `Skipping create after label: ${ticketName} exists as ${syncedIssue.githubIssueId}.`;
+                const reason = `Skipping story create: ${story.id} exists as ${syncedIssue.githubIssueId}`;
                 console.log(reason);
                 return reason;
             }
 
-            if (data.id?.includes(GITHUB.UUID_SUFFIX)) {
-                const reason = skipReason("issue", data.id, true);
-                console.log(reason);
-                return reason;
-            }
-
-            let markdown = data.description;
-
-            if (markdown?.match(GENERAL.INLINE_IMG_TAG_REGEX)) {
-                const publicIssue = await linear.issue(data.id);
-                if (publicIssue?.description) {
-                    markdown = publicIssue.description;
-                }
-            }
-
-            const modifiedDescription = await prepareMarkdownContent(
-                markdown,
-                "linear"
+            let modifiedDescription = await prepareMarkdownContent(
+                story.description || "",
+                "shortcut" as Platform
             );
 
             const assignee = await prisma.user.findFirst({
-                where: { linearUserId: data.assigneeId },
+                where: { linearUserId: story.owner_ids?.[0] },
                 select: { githubUsername: true }
             });
 
-            const createdIssueResponse = await got.post(issuesEndpoint, {
-                headers: defaultHeaders,
-                json: {
-                    title: `[${ticketName}] ${data.title}`,
-                    body: `${
-                        modifiedDescription ?? ""
-                    }\n\n<sub>${getSyncFooter()} | [${ticketName}](${url})</sub>`,
-                    ...(data.assigneeId &&
-                        assignee?.githubUsername && {
-                            assignees: [assignee?.githubUsername]
+            const createdIssueResponse = await got.post(
+                `${GITHUB.REPO_ENDPOINT}/${repoFullName}/issues`,
+                {
+                    headers: defaultHeaders,
+                    json: {
+                        title: `[${ticketName}] ${story.name}`,
+                        body: modifiedDescription,
+                        ...(assignee?.githubUsername && {
+                            assignee: assignee.githubUsername
                         })
+                    }
                 }
-            });
+            );
 
             if (createdIssueResponse.statusCode > 201) {
-                const reason = `Failed to create issue for ${data.id} with status ${createdIssueResponse.statusCode}.`;
+                const reason = `Failed to create issue for ${story.id} with status ${createdIssueResponse.statusCode}.`;
                 console.log(reason);
                 throw new ApiError(reason, 500);
             }
@@ -1040,57 +941,75 @@ export async function linearWebhookHandler(
             );
 
             const attachmentQuery = getAttachmentQuery(
-                data.id,
+                story.id,
                 createdIssueData.number,
                 repoFullName
             );
 
             await Promise.all([
-                linearQuery(attachmentQuery, linearKey).then(response => {
-                    if (!response?.data?.attachmentCreate?.success) {
+                shortcutQuery(`/attachments`, shortcutKey, 'POST', attachmentQuery).then(response => {
+                    if (!response || response.error) {
                         console.log(
-                            `Failed to add attachment to ${ticketName} for ${
-                                createdIssueData.id
-                            }: ${response?.error || ""}.`
+                            `Failed to add attachment to ${ticketName} for ${createdIssueData.id}`
                         );
                     } else {
                         console.log(
-                            `Created attachment on ${ticketName} for ${createdIssueData.id}.`
+                            `Added attachment to ${ticketName} for ${createdIssueData.id}`
                         );
                     }
                 }),
                 prisma.syncedIssue.create({
                     data: {
                         githubIssueId: createdIssueData.id,
-                        linearIssueId: data.id,
-                        linearTeamId: data.teamId,
+                        linearIssueId: story.id.toString(),
+                        linearTeamId: story.project_id?.toString(),
                         githubIssueNumber: createdIssueData.number,
-                        linearIssueNumber: data.number,
+                        linearIssueNumber: story.id,
                         githubRepoId: repoId
                     }
                 })
-            ] as Promise<void>[]);
+            ]);
 
             // Apply all labels to newly-created issue
-            const labelIds = data.labelIds.filter(id => id != publicLabelId);
-            const labelNames: string[] = [];
-            for (const labelId of labelIds) {
-                if (labelId === publicLabelId) continue;
+            for (const label of story.labels || []) {
+                if (label.name === SHORTCUT.GITHUB_LABEL) continue;
 
-                const label = await linear.issueLabel(labelId);
-                if (!label) {
+                const { createdLabel, error: createLabelError } = await createLabel({
+                    repoFullName,
+                    label: {
+                        name: label.name,
+                        color: label.color.replace('#', '')
+                    },
+                    githubAuthHeader: defaultHeaders.Authorization,
+                    userAgentHeader: defaultHeaders["User-Agent"]
+                });
+
+                if (createLabelError) {
                     console.log(
-                        `Could not find label ${labelId} for ${ticketName}.`
+                        `Could not create label "${label.name}" in ${repoFullName}.`
                     );
                     continue;
                 }
 
-                const { createdLabel, error } = await createLabel({
+                const labelName = createdLabel ? createdLabel.name : label.name;
+                const { error: applyLabelError } = await applyLabel({
                     repoFullName,
-                    label,
-                    githubAuthHeader,
-                    userAgentHeader
+                    issueNumber: createdIssueData.number,
+                    labelNames: [labelName],
+                    githubAuthHeader: defaultHeaders.Authorization,
+                    userAgentHeader: defaultHeaders["User-Agent"]
                 });
+
+                if (applyLabelError) {
+                    console.log(
+                        `Could not apply label "${labelName}" to #${createdIssueData.id} in ${repoFullName}.`
+                    );
+                } else {
+                    console.log(
+                        `Applied label "${labelName}" to #${createdIssueData.id} in ${repoFullName}.`
+                    );
+                }
+            }
 
                 if (error) {
                     console.log(

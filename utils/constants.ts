@@ -40,6 +40,7 @@ export const GITHUB = {
         "https://api.github.com/user/repos?per_page=100&sort=updated",
     USER_ENDPOINT: "https://api.github.com/user",
     REPO_ENDPOINT: "https://api.github.com/repos",
+    BASE_URL: "https://github.com",
     ICON_URL:
         "https://cdn.discordapp.com/attachments/937628023497297930/988735284504043520/github.png",
     STORAGE_KEY: "github-context",
