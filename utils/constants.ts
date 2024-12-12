@@ -4,27 +4,17 @@ export const SECONDS_IN_HOUR = 60 * 60;
 export const SECONDS_IN_DAY = 24 * SECONDS_IN_HOUR;
 export const SECONDS_IN_YEAR = 365 * SECONDS_IN_DAY;
 
-export const LINEAR = {
-    OAUTH_ID: process.env.NEXT_PUBLIC_LINEAR_OAUTH_ID,
-    OAUTH_URL: "https://linear.app/oauth/authorize",
-    TOKEN_URL: "https://api.linear.app/oauth/token",
-    SCOPES: ["write"],
-    NEW_TOKEN_URL: "https://linear.app/settings/api",
-    TOKEN_SECTION_HEADER: "Personal API keys",
-    GRAPHQL_ENDPOINT: "https://api.linear.app/graphql",
-    IP_ORIGINS: ["35.231.147.226", "35.243.134.228"],
-    STORAGE_KEY: "linear-context",
-    APP_URL: "https://linear.app",
-    GITHUB_LABEL: "linear",
-    GITHUB_LABEL_COLOR: "#4941DA",
-    WEBHOOK_EVENTS: ["Issue", "Comment", "IssueLabel"],
+export const SHORTCUT = {
+    API_KEY: process.env.SHORTCUT_API_KEY,
+    API_URL: "https://api.app.shortcut.com/api/v3",
+    STORAGE_KEY: "shortcut-context",
+    GITHUB_LABEL: "shortcut",
+    GITHUB_LABEL_COLOR: "#2DA54E",
+    WEBHOOK_EVENTS: ["Story", "Comment", "Label"],
     TICKET_STATES: {
-        todo: "Todo",
+        started: "Started",
         done: "Done",
-        canceled: "Canceled"
-    },
-    PUBLIC_QUERY_HEADERS: {
-        "public-file-urls-expire-in": SECONDS_IN_YEAR.toString()
+        archived: "Archived"
     }
 };
 
@@ -61,63 +51,63 @@ export const TIMEOUTS = {
 };
 
 export const GENERAL = {
-    APP_NAME: "Linear-GitHub Sync",
-    APP_URL: "https://synclinear.com",
-    CONTRIBUTE_URL: "https://github.com/calcom/synclinear.com",
+    APP_NAME: "Shortcut-GitHub Sync",
+    APP_URL: "https://syncshortcut.com",
+    CONTRIBUTE_URL: "https://github.com/calcom/syncshortcut.com",
     IMG_TAG_REGEX: /<img.*src=[\'|\"| ]?https?:\/\/(.*?)[\'|\"| ].*\/?>/g,
     INLINE_IMG_TAG_REGEX: /!\[.*?\]\((https:\/\/(?!.*\?signature=).*?)\)/g,
-    LINEAR_TICKET_ID_REGEX: /^\[\w{1,5}-\d{1,6}\]\s/,
+    SHORTCUT_TICKET_ID_REGEX: /^\[\w{1,5}-\d{1,6}\]\s/,
     LOGIN_KEY: "login",
     SYNCED_ITEMS: [
         {
-            linearField: "Title",
+            shortcutField: "Title",
             githubField: "Title",
             toGithub: true,
-            toLinear: true
+            toShortcut: true
         },
         {
-            linearField: "Description",
+            shortcutField: "Description",
             githubField: "Description",
             toGithub: true,
-            toLinear: true
+            toShortcut: true
         },
         {
-            linearField: "Labels",
+            shortcutField: "Labels",
             githubField: "Labels",
             toGithub: true,
             notes: "GitHub labels will be created if they don't yet exist"
         },
         {
-            linearField: "Assignee",
+            shortcutField: "Assignee",
             githubField: "Assignee",
             toGithub: true,
-            toLinear: true,
+            toShortcut: true,
             notes: "For authenticated users only. Silently ignored otherwise."
         },
         {
-            linearField: "Status",
+            shortcutField: "Status",
             githubField: "State",
             toGithub: true,
-            toLinear: true,
-            notes: "eg. Closed issue in GitHub will be marked as Done in Linear"
+            toShortcut: true,
+            notes: "eg. Closed issue in GitHub will be marked as Done in Shortcut"
         },
         {
-            linearField: "Comments",
+            shortcutField: "Comments",
             githubField: "Comments",
             toGithub: true,
-            toLinear: true,
+            toShortcut: true,
             notes: "GitHub comments by non-members are ignored"
         },
         {
-            linearField: "Priority",
+            shortcutField: "Priority",
             toGithub: true,
             githubField: "Label"
         },
         {
-            linearField: "Cycle",
+            shortcutField: "Cycle",
             githubField: "Milestone",
             toGithub: true,
-            toLinear: true,
+            toShortcut: true,
             notes: "Optional. Milestone due date syncs to cycle end date."
         }
     ]
