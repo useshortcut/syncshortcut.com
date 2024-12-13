@@ -12,17 +12,17 @@ In order for data to sync from Shortcut to GitHub, your Shortcut account must ha
 
 ### Shortcut application
 
-To ensure the application is installed, see [Shortcut application settings](https://app.shortcut.com/settings/account/security). You should see the app installed.
+To ensure the application is installed, see [Shortcut application settings](https://app.shortcut.com/settings/account/security). You should see the app installed as shown below:
 
-[Note: Screenshot needs to be updated for Shortcut UI]
+![Shortcut Application Settings](/public/shortcut-app-settings.png)
 
 ### Shortcut webhook
 
 For the webhook, you can see your existing webhooks under [webhook settings](https://app.shortcut.com/settings/api).
 
-You should have a Shortcut webhook with the following configuration. If it's not there and you've already set SyncShortcut up, you can add it manually.
+You should have a Shortcut webhook with the following configuration. If it's not there and you've already set SyncShortcut up, you can add it manually:
 
-[Note: Screenshot needs to be updated for Shortcut UI]
+![Shortcut Webhook Settings](/public/shortcut-webhook-settings.png)
 
 Your Shortcut data should now be syncing to GitHub!
 
@@ -47,5 +47,3 @@ Finally, we can ensure that the webhook GitHub triggers when an event occurs is 
 You should see a webhook to `https://syncshortcut.com/api`. Have a look at the **Recent Deliveries** tab.
 
 Are there any webhooks failing? If your integration is not working and you are seeing errors, please [raise an issue](https://github.com/calcom/syncshortcut.com/issues/new) with the body/error message of the webhook request.
-
-[Note: Screenshot needs to be updated for new webhook URL]
