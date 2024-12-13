@@ -19,7 +19,7 @@ const Footer = () => {
                 </div>
                 <div></div>
                 <a
-                    href="https://github.com/calcom/synclinear.com"
+                    href="https://github.com/useshortcut/syncshortcut.com"
                     rel="noreferrer"
                     target="_blank"
                     className="text-gray-400 hover:text-gray-100 sm:order-first"

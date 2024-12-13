@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { linearWebhookHandler } from "../../utils/webhook/linear.handler";
+import { shortcutWebhookHandler } from "../../utils/webhook/shortcut.handler";
 import { githubWebhookHandler } from "../../utils/webhook/github.handler";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
@@ -12,9 +12,9 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
     try {
         /**
-         * Linear webhook consumer
+         * Shortcut webhook consumer
          */
-        if (req.headers["user-agent"] === "Linear-Webhook") {
+        if (req.headers["user-agent"] === "Shortcut-Webhook") {
             let originIp = req.headers["x-forwarded-for"];
 
             if (Array.isArray(originIp)) {
@@ -25,7 +25,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
                 originIp = originIp.split(",")[0].trim();
             }
 
-            const result = await linearWebhookHandler(req.body, originIp);
+            const result = await shortcutWebhookHandler(req.body, originIp);
 
             if (result) {
                 console.log(result);

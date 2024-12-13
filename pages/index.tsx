@@ -2,12 +2,12 @@ import React, { useContext, useEffect, useState } from "react";
 import Footer from "../components/Footer";
 import GitHubAuthButton from "../components/GitHubAuthButton";
 import Landing from "../components/Landing";
-import LinearAuthButton from "../components/LinearAuthButton";
+import ShortcutAuthButton from "../components/ShortcutAuthButton";
 import PageHead from "../components/PageHead";
 import SyncArrow from "../components/SyncArrow";
 import { saveSync } from "../utils";
 import confetti from "canvas-confetti";
-import { GITHUB, LINEAR } from "../utils/constants";
+import { GITHUB, SHORTCUT } from "../utils/constants";
 import { ExternalLinkIcon } from "@radix-ui/react-icons";
 import Header from "../components/Header";
 import { Context } from "../components/ContextProvider";
@@ -15,16 +15,16 @@ import Dashboard from "../components/Dashboard";
 import LogoShelf from "../components/LogoShelf";
 
 const index = () => {
-    const { linearContext, setLinearContext, gitHubContext, setGitHubContext } =
+    const { shortcutContext, setShortcutContext, gitHubContext, setGitHubContext } =
         useContext(Context);
     const [synced, setSynced] = useState(false);
     const [restored, setRestored] = useState(false);
 
     // Load the saved context from localStorage
     useEffect(() => {
-        if (localStorage.getItem(LINEAR.STORAGE_KEY)) {
-            setLinearContext(
-                JSON.parse(localStorage.getItem(LINEAR.STORAGE_KEY))
+        if (localStorage.getItem(SHORTCUT.STORAGE_KEY)) {
+            setShortcutContext(
+                JSON.parse(localStorage.getItem(SHORTCUT.STORAGE_KEY))
             );
             setRestored(true);
         }
@@ -38,10 +38,10 @@ const index = () => {
 
     // Save the context to localStorage or server
     useEffect(() => {
-        if (linearContext.apiKey) {
+        if (shortcutContext.apiKey) {
             localStorage.setItem(
-                LINEAR.STORAGE_KEY,
-                JSON.stringify(linearContext)
+                SHORTCUT.STORAGE_KEY,
+                JSON.stringify(shortcutContext)
             );
         }
         if (gitHubContext.apiKey) {
@@ -51,8 +51,8 @@ const index = () => {
             );
         }
 
-        if (linearContext.teamId && gitHubContext.repoId) {
-            saveSync(linearContext, gitHubContext)
+        if (shortcutContext.teamId && gitHubContext.repoId) {
+            saveSync(shortcutContext, gitHubContext)
                 .then(res => {
                     if (res.error) {
                         alert(res.error);
@@ -76,7 +76,7 @@ const index = () => {
                     setSynced(false);
                 });
         }
-    }, [gitHubContext, linearContext]);
+    }, [gitHubContext, shortcutContext]);
 
     return (
         <div>
@@ -87,35 +87,35 @@ const index = () => {
                     <span className="px-3 py-1 rounded-full bg-gray-500 text-gray-200">
                         Beta
                     </span>
-                    <h1>Linear-GitHub Sync</h1>
+                    <h1>Shortcut-GitHub Sync</h1>
                     <p className="text-2xl font-tertiary">
-                        End-to-end sync of Linear tickets and GitHub issues
+                        End-to-end sync of Shortcut stories and GitHub issues
                     </p>
                 </div>
                 <Dashboard />
                 <div className="w-full flex flex-col sm:flex-row justify-center items-center sm:items-start gap-4">
-                    <LinearAuthButton
-                        restoredApiKey={linearContext.apiKey}
+                    <ShortcutAuthButton
+                        restoredApiKey={shortcutContext.apiKey}
                         restored={restored}
                         onAuth={(apiKey: string) =>
-                            setLinearContext({
-                                ...linearContext,
+                            setShortcutContext({
+                                ...shortcutContext,
                                 apiKey
                             })
                         }
-                        onDeployWebhook={setLinearContext}
+                        onDeployWebhook={setShortcutContext}
                     />
                     <div className="flex sm:center h-20 sm:h-fit sm:w-56 shrink gap-4">
                         <SyncArrow
                             direction="right"
                             active={
-                                !!linearContext.teamId && !!gitHubContext.apiKey
+                                !!shortcutContext.teamId && !!gitHubContext.apiKey
                             }
                         />
                         <SyncArrow
                             direction="left"
                             active={
-                                !!gitHubContext.repoId && !!linearContext.apiKey
+                                !!gitHubContext.repoId && !!shortcutContext.apiKey
                             }
                         />
                     </div>
@@ -138,11 +138,11 @@ const index = () => {
                 >
                     <h3 className="text-green-600">Synced!</h3>
                     <p>
-                        To test your connection, tag a Linear issue as{" "}
+                        To test your connection, tag a Shortcut story as{" "}
                         <code>Public</code>:
                     </p>
-                    <button onClick={() => window.open(LINEAR.APP_URL)}>
-                        <span>Open Linear</span>
+                    <button onClick={() => window.open(SHORTCUT.APP_URL)}>
+                        <span>Open Shortcut</span>
                         <ExternalLinkIcon className="w-6 h-6" />
                     </button>
                 </div>

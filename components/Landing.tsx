@@ -16,11 +16,11 @@ const Landing = () => {
                 <div className="space-y-10 max-w-xl text-center">
                     <h2 className="text-gray-200">What does it do?</h2>
                     <h3 className="font-negative">
-                        This app lets you mirror Linear and GitHub issues.
+                        This app lets you mirror Shortcut and GitHub issues.
                     </h3>
                     <h3 className="font-negative">
                         This way, open-source teams can chat with contributors
-                        without giving access to an internal Linear team.
+                        without giving access to an internal Shortcut team.
                     </h3>
                 </div>
             </div>
@@ -32,28 +32,28 @@ const Landing = () => {
                 </h3>
                 <div className="grid grid-cols-3 font-tertiary gap-y-3">
                     <>
-                        <h2 className="text-right font-tertiary">Linear</h2>
+                        <h2 className="text-right font-tertiary">Shortcut</h2>
                         <div />
                         <h2 className="text-left font-tertiary">GitHub</h2>
                     </>
                     {GENERAL.SYNCED_ITEMS.map(
                         ({
-                            linearField,
+                            shortcutField,
                             githubField,
                             toGithub,
-                            toLinear,
+                            toShortcut,
                             notes
                         }) => (
-                            <Fragment key={`${linearField}-${githubField}`}>
-                                <code className="ml-auto">{linearField}</code>
+                            <Fragment key={`${shortcutField}-${githubField}`}>
+                                <code className="ml-auto">{shortcutField}</code>
                                 <div className="center !flex-row">
-                                    {!toLinear && !toGithub ? (
+                                    {!toShortcut && !toGithub ? (
                                         <span className="italic">
                                             Coming soon
                                         </span>
                                     ) : (
                                         <>
-                                            {toLinear ? (
+                                            {toShortcut ? (
                                                 <ArrowLeftIcon className="w-6 h-6 translate-x-1" />
                                             ) : (
                                                 <div className="w-6 h-6" />
@@ -95,15 +95,15 @@ const Landing = () => {
                 <ul className="text-xl font-tertiary">
                     <li>
                         1. If you're setting this up for your team, simply pick
-                        your Linear team and a GitHub repo
+                        your Shortcut team and a GitHub repo
                     </li>
                     <li>
                         2. If you're joining a team, simply authorize the app to
                         open issues as you
                     </li>
                     <li>
-                        3. Label a Linear ticket as <code>Public</code> (or
-                        label a GitHub issue as <code>linear</code>) to mirror
+                        3. Label a Shortcut story as <code>Public</code> (or
+                        label a GitHub issue as <code>shortcut</code>) to mirror
                         it
                     </li>
                     <li>4. Comments on that issue will sync back!</li>
@@ -136,7 +136,7 @@ const Landing = () => {
             <div className="space-y-10 max-w-xl text-center center">
                 <h2 className="text-center">Pricing</h2>
                 <h3>
-                    SyncLinear.com is completely free. If you want to support
+                    SyncShortcut.com is completely free. If you want to support
                     its development, please subscribe to a<br />
                     <a href="https://cal.com/pricing">Cal.com</a> plan.
                 </h3>

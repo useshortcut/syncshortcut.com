@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import prisma from "../../../prisma";
-import { getLinearWebhook } from "../../../utils/linear";
+import { getShortcutWebhook } from "../../../utils/shortcut";
 
-// POST /api/linear/webhook
+// POST /api/shortcut/webhook
 export default async function handle(
     req: NextApiRequest,
     res: NextApiResponse
@@ -29,12 +29,12 @@ export default async function handle(
 
     try {
         // Check for existence of team in DB
-        const teamCount: number = await prisma.linearTeam.count({
+        const teamCount: number = await prisma.shortcutTeam.count({
             where: { teamId: `${teamId}` }
         });
 
         // Check for existing webhook
-        const existingWebhook = await getLinearWebhook(token, teamName);
+        const existingWebhook = await getShortcutWebhook(token, teamName);
 
         return res.status(200).json({
             teamInDB: teamCount > 0,

@@ -15,7 +15,7 @@ export default async function handle(
         });
     }
 
-    const { github, linear } = JSON.parse(req.body);
+    const { github, shortcut } = JSON.parse(req.body);
 
     // Check for each required field
     if (!github?.userId) {
@@ -26,23 +26,23 @@ export default async function handle(
         return res
             .status(404)
             .send({ error: "Failed to save sync: missing GH repo ID" });
-    } else if (!linear?.userId) {
+    } else if (!shortcut?.userId) {
         return res
             .status(404)
-            .send({ error: "Failed to save sync: missing Linear user ID" });
-    } else if (!linear?.teamId) {
+            .send({ error: "Failed to save sync: missing Shortcut user ID" });
+    } else if (!shortcut?.teamId) {
         return res
             .status(404)
-            .send({ error: "Failed to save sync: missing Linear team ID" });
-    } else if (!linear?.apiKey || !github?.apiKey) {
+            .send({ error: "Failed to save sync: missing Shortcut team ID" });
+    } else if (!shortcut?.apiKey || !github?.apiKey) {
         return res
             .status(404)
             .send({ error: "Failed to save sync: missing API key" });
     }
 
     // Encrypt the API keys
-    const { hash: linearApiKey, initVector: linearApiKeyIV } = encrypt(
-        linear.apiKey
+    const { hash: shortcutApiKey, initVector: shortcutApiKeyIV } = encrypt(
+        shortcut.apiKey
     );
     const { hash: githubApiKey, initVector: githubApiKeyIV } = encrypt(
         github.apiKey
@@ -51,18 +51,18 @@ export default async function handle(
     try {
         await prisma.sync.upsert({
             where: {
-                githubUserId_linearUserId_githubRepoId_linearTeamId: {
+                githubUserId_shortcutUserId_githubRepoId_shortcutTeamId: {
                     githubUserId: github.userId,
                     githubRepoId: github.repoId,
-                    linearUserId: linear.userId,
-                    linearTeamId: linear.teamId
+                    shortcutUserId: shortcut.userId,
+                    shortcutTeamId: shortcut.teamId
                 }
             },
             update: {
                 githubApiKey,
                 githubApiKeyIV,
-                linearApiKey,
-                linearApiKeyIV
+                shortcutApiKey,
+                shortcutApiKeyIV
             },
             create: {
                 // GitHub
@@ -71,11 +71,11 @@ export default async function handle(
                 githubApiKey,
                 githubApiKeyIV,
 
-                // Linear
-                linearUserId: linear.userId,
-                linearTeamId: linear.teamId,
-                linearApiKey,
-                linearApiKeyIV
+                // Shortcut
+                shortcutUserId: shortcut.userId,
+                shortcutTeamId: shortcut.teamId,
+                shortcutApiKey,
+                shortcutApiKeyIV
             }
         });
 

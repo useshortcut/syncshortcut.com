@@ -1,6 +1,7 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
-import { GitHubContext, LinearContext } from "../typings";
+import { GitHubContext, ShortcutContext } from "../typings";
 import { GENERAL, GITHUB } from "./constants";
+import { v4 as uuidv4 } from 'uuid';
 
 export const isDev = (): boolean => {
     return process.env.NODE_ENV === "development";
@@ -9,7 +10,7 @@ export const isDev = (): boolean => {
 export const getWebhookURL = (): string => {
     if (typeof window == "undefined") {
         // TODO: Support ngrok URLs for local development
-        return "https://synclinear.com/api";
+        return "https://syncshortcut.com/api";
     }
 
     if (window.location.hostname === "localhost") return "https://example.com";
@@ -91,18 +92,18 @@ export const replaceGithubComment = (text: string): string => {
 };
 
 export const getSyncFooter = (): string => {
-    return `From [SyncLinear.com](https://synclinear.com)`;
+    return `From [SyncShortcut.com](https://syncshortcut.com)`;
 };
 
-export const legacySyncFooter = `From [Linear-GitHub Sync](https://synclinear.com)`;
+export const legacySyncFooter = `From [Shortcut-GitHub Sync](https://syncshortcut.com)`;
 
 export const saveSync = async (
-    linearContext: LinearContext,
+    shortcutContext: ShortcutContext,
     githubContext: GitHubContext
 ) => {
     const data = {
         github: { ...githubContext },
-        linear: { ...linearContext }
+        shortcut: { ...shortcutContext }
     };
 
     const response = await fetch("/api/save", {
@@ -114,16 +115,16 @@ export const saveSync = async (
 };
 
 export const getAttachmentQuery = (
-    issueId: string,
-    issueNumber: number,
+    storyId: string,
+    storyNumber: number,
     repoFullName: string
 ): string => {
     return `mutation {
         attachmentCreate(input: {
-            issueId: "${issueId}"
-            title: "GitHub Issue #${issueNumber} - ${repoFullName}"
+            storyId: "${storyId}"
+            title: "GitHub Story #${storyNumber} - ${repoFullName}"
             subtitle: "Synchronized"
-            url: "https://github.com/${repoFullName}/issues/${issueNumber}"
+            url: "https://github.com/${repoFullName}/issues/${storyNumber}"
             iconUrl: "${GITHUB.ICON_URL}"
         }) {
             success
@@ -133,23 +134,27 @@ export const getAttachmentQuery = (
 
 export const skipReason = (
     event:
-        | "issue"
+        | "story"
         | "edit"
         | "milestone"
-        | "project"
+        | "epic"
         | "comment"
         | "state change"
         | "label"
         | "assignee",
-    issueNumber: number | string,
+    storyNumber: number | string,
     causedBySync = false
 ): string => {
-    return `Skipping over ${event} for issue #${issueNumber} as it is ${
+    return `Skipping over ${event} for story #${storyNumber} as it is ${
         causedBySync ? "caused by sync" : "not synced"
     }.`;
 };
 
 export const isNumber = (value: string | number): boolean => {
     return !isNaN(Number(value));
+};
+
+export const generateShortcutUUID = (): string => {
+    return uuidv4();
 };
 

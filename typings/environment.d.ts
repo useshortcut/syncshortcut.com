@@ -8,7 +8,6 @@ declare global {
             LINEAR_TEAM_ID: string;
 
             LINEAR_PUBLIC_LABEL_ID: string;
-            LINEAR_CANCELED_STATE_ID: string;
             LINEAR_DONE_STATE_ID: string;
             LINEAR_TODO_STATE_ID: string;
 

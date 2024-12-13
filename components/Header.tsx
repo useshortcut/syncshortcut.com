@@ -6,7 +6,7 @@ const Header = () => {
         <header className="sticky top-0 z-10 w-full">
             <div className="p-3 sm:px-6 flex items-center justify-between gap-4">
                 <div className="text-xl font-cal-sans font-tertiary font-semibold">
-                    SyncLinear.com
+                    SyncShortcut.com
                 </div>
                 <LoginButton />
             </div>

@@ -8,9 +8,9 @@ import React from "react";
  * @returns Next.js <Head /> with title, meta tags, and link tags
  */
 function PageHead({
-    title = "Linear-GitHub Sync",
-    description = "Full end-to-end sync of Linear tickets and GitHub issues. An open-source project by Cal.com.",
-    linkPreview = "https://user-images.githubusercontent.com/8019099/188273531-5ce9fa14-b8cf-4c9b-994b-2e00e3e5d537.png"
+    title = "Shortcut-GitHub Sync",
+    description = "Full end-to-end sync of Shortcut stories and GitHub issues. An open-source project by Cal.com.",
+    linkPreview = "https://raw.githubusercontent.com/kschrader/syncshortcut.com/devin/1734046717-migrate-to-shortcut/public/images/social-preview.png"
 }) {
     return (
         <Head>
@@ -25,21 +25,21 @@ function PageHead({
             <meta name="description" content={description} />
 
             {/* OG */}
-            <meta property="og:title" content="Linear-GitHub Sync" />
+            <meta property="og:title" content="Shortcut-GitHub Sync" />
             <meta property="og:description" content={description} />
-            <meta property="og:url" content="https://synclinear.com" />
+            <meta property="og:url" content="https://syncshortcut.com" />
             <meta property="og:type" content="website" />
-            <meta property="og:site_name" content="Linear-GitHub Sync" />
+            <meta property="og:site_name" content="Shortcut-GitHub Sync" />
             <meta property="og:image" content={linkPreview} />
             <meta property="og:card" content={linkPreview} />
-            <meta property="og:image:alt" content="Linear-GitHub Sync logos" />
+            <meta property="og:image:alt" content="Shortcut-GitHub Sync logos" />
 
             {/* Twitter */}
             <meta name="twitter:title" content={title} />
             <meta name="twitter:description" content={description} />
             <meta name="twitter:card" content="summary_large_image" />
             <meta name="twitter:image" content={linkPreview} />
-            <meta name="twitter:image:alt" content="Linear-GitHub Sync logos" />
+            <meta name="twitter:image:alt" content="Shortcut-GitHub Sync logos" />
 
             {/* Links */}
             <link

@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { createLabel } from "../utils";
+import prisma from "../../../prisma";
+import { createLabel } from "../../../utils/shortcut-utils";
 
-// POST /api/github/label
 export default async function handle(
     req: NextApiRequest,
     res: NextApiResponse
@@ -25,20 +25,30 @@ export default async function handle(
     }
 
     try {
-        const { createdLabel, error } = await createLabel({
-            repoFullName: repoName,
-            label,
-            githubAuthHeader: authHeader,
-            userAgentHeader: `${repoName}, linear-github-sync`
+        const sync = await prisma.sync.findFirst({
+            where: {
+                GitHubRepo: {
+                    repoName: repoName
+                }
+            },
+            include: {
+                ShortcutTeam: true
+            }
         });
 
-        if (error) {
-            throw new Error(`Could not create GitHub label "${label.name}"`);
+        if (!sync?.ShortcutTeam) {
+            return res.status(404).send({ error: "Team not found" });
         }
 
-        return res.status(200).json({ createdLabel });
+        await createLabel(
+            sync.shortcutApiKey,
+            sync.ShortcutTeam.teamId,
+            { name: label.name, color: label.color }
+        );
+
+        return res.status(200).json({ message: "Label created successfully" });
     } catch (err) {
-        return res.status(404).send({ error: err });
+        return res.status(500).send({ error: err.message });
     }
 }
 

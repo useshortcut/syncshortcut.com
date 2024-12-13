@@ -1,15 +1,15 @@
 import { formatJSON } from ".";
 
-export const getIssueUpdateError = (
+export const getStoryUpdateError = (
     resource: "state" | "description" | "title" | "assignee",
     data: { number: number; id: string; team: { key: string } },
-    syncedIssue: { githubIssueNumber: bigint; githubIssueId: bigint },
+    syncedStory: { githubIssueNumber: bigint; githubIssueId: bigint },
     updatedIssueResponse: any
 ): string => {
-    return `Failed to update GitHub issue ${resource} for ${data.team.key}-${
+    return `Failed to update GitHub story ${resource} for ${data.team.key}-${
         data.number
-    } [${data.id}] on GitHub issue #${syncedIssue.githubIssueNumber} [${
-        syncedIssue.githubIssueId
+    } [${data.id}] on GitHub story #${syncedStory.githubIssueNumber} [${
+        syncedStory.githubIssueId
     }], received status code ${
         updatedIssueResponse.statusCode
     }, body of ${formatJSON(JSON.parse(updatedIssueResponse.body))}.`;

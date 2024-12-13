@@ -3,7 +3,7 @@ import { exchangeGitHubToken, getGitHubAuthURL } from "../utils/github";
 import GitHubLogo from "./icons/GitHubLogo";
 import { v4 as uuid } from "uuid";
 import { clearURLParams } from "../utils";
-import { GENERAL, GITHUB, LINEAR } from "../utils/constants";
+import { GENERAL, GITHUB, SHORTCUT } from "../utils/constants";
 import { Cross1Icon } from "@radix-ui/react-icons";
 import { Context } from "./ContextProvider";
 
@@ -98,7 +98,7 @@ const LoginButton = () => {
         clearURLParams();
         localStorage.removeItem(`${GENERAL.LOGIN_KEY}-verification`);
         localStorage.removeItem(`${GENERAL.LOGIN_KEY}-token`);
-        localStorage.removeItem(LINEAR.STORAGE_KEY);
+        localStorage.removeItem(SHORTCUT.STORAGE_KEY);
         localStorage.removeItem(GITHUB.STORAGE_KEY);
     };
 

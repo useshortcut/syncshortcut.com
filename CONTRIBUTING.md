@@ -1,8 +1,8 @@
-# Contributing to SyncLinear.com
+# Contributing to SyncShortcut.com
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-- Before jumping into a PR be sure to search [existing PRs](https://github.com/calcom/synclinear.com/pulls) or [issues](https://github.com/calcom/synclinear.com/issues) for an open or closed item that relates to your submission.
+- Before jumping into a PR be sure to search [existing PRs](https://github.com/useshortcut/syncshortcut.com/pulls) or [issues](https://github.com/useshortcut/syncshortcut.com/issues) for an open or closed item that relates to your submission.
 
 ## Developing
 
@@ -66,8 +66,8 @@ If you get errors, be sure to fix them before committing.
 
 This app has two major components: a "webhook consumer" and a web UI for auth.
 
-The [webhook consumer](/pages/api/index.ts) is a single endpoint that receives webhooks from Linear and GitHub then decides what to do.
+The [webhook consumer](/pages/api/index.ts) is a single endpoint that receives webhooks from Shortcut and GitHub then decides what to do.
 
-Data such as GitHub repos, synced issues, and usernames are persisted in PostgreSQL. This is the current data model, as specified in the [schema](/prisma/schema.prisma):
+Data such as GitHub repos, synced stories, and usernames are persisted in PostgreSQL. This is the current data model, as specified in the [schema](/prisma/schema.prisma):
 
-![image](https://user-images.githubusercontent.com/36117635/198146657-b37d3eee-c747-4aef-945f-b5ddac984063.png)
+![Shortcut GitHub Integration Schema](/public/schema.png)

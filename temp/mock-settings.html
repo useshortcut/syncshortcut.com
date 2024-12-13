@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Shortcut Settings</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f6f8;
+        }
+        .settings-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .header {
+            border-bottom: 1px solid #e1e4e8;
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+        .header h1 {
+            margin: 0;
+            color: #1F3349;
+            font-size: 24px;
+        }
+        .app-section {
+            padding: 16px;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            margin-bottom: 16px;
+        }
+        .app-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .app-icon {
+            width: 40px;
+            height: 40px;
+            margin-right: 16px;
+            border-radius: 6px;
+            background: #1F3349;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .app-info h2 {
+            margin: 0;
+            font-size: 18px;
+            color: #1F3349;
+        }
+        .app-info p {
+            margin: 4px 0 0;
+            color: #6e7781;
+            font-size: 14px;
+        }
+        .webhook-section {
+            margin-top: 32px;
+        }
+        .webhook-url {
+            background: #f6f8fa;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            margin: 8px 0;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            background: #2da44e;
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <!-- App Settings View -->
+    <div class="settings-container" id="app-settings">
+        <div class="header">
+            <h1>Connected Applications</h1>
+        </div>
+        <div class="app-section">
+            <div class="app-header">
+                <div class="app-icon">S</div>
+                <div class="app-info">
+                    <h2>SyncShortcut</h2>
+                    <p>Synchronize Shortcut stories with GitHub issues</p>
+                </div>
+            </div>
+            <div class="status-badge">Installed</div>
+        </div>
+    </div>
+
+    <!-- Webhook Settings View -->
+    <div class="settings-container webhook-section" id="webhook-settings" style="display: none;">
+        <div class="header">
+            <h1>Webhooks</h1>
+        </div>
+        <div class="app-section">
+            <div class="app-header">
+                <div class="app-info">
+                    <h2>SyncShortcut Webhook</h2>
+                    <p>Endpoint URL:</p>
+                    <div class="webhook-url">https://syncshortcut.com/api/shortcut/webhook</div>
+                </div>
+            </div>
+            <div class="status-badge">Active</div>
+        </div>
+    </div>
+</body>
+</html>

@@ -12,13 +12,13 @@ model SyncedIssue {
     id String @id @default(cuid())
 
     githubIssueNumber BigInt
-    linearIssueNumber Int
+    shortcutStoryNumber Int
 
     githubIssueId BigInt
-    linearIssueId String
+    shortcutStoryId String
 
-    linearTeamId String
-    LinearTeam   LinearTeam @relation(fields: [linearTeamId], references: [teamId])
+    shortcutTeamId String
+    ShortcutTeam   ShortcutTeam @relation(fields: [shortcutTeamId], references: [teamId])
 
     githubRepoId BigInt
     GitHubRepo   GitHubRepo @relation(fields: [githubRepoId], references: [repoId])
@@ -26,7 +26,7 @@ model SyncedIssue {
     @@map("synced_issues")
 }
 
-model LinearTeam {
+model ShortcutTeam {
     id String @id @default(cuid())
 
     teamId   String @unique
@@ -34,16 +34,16 @@ model LinearTeam {
 
     publicLabelId String
 
-    canceledStateId String
+    archivedStateId String
     doneStateId     String
-    toDoStateId     String
+    startedStateId  String
 
     Sync Sync[]
 
     SyncedIssue SyncedIssue[]
     Milestone   Milestone[]
 
-    @@map("linear_teams")
+    @@map("shortcut_teams")
 }
 
 model GitHubRepo {
@@ -66,19 +66,19 @@ model Sync {
     id String @id @default(cuid())
 
     githubUserId BigInt
-    linearUserId String
+    shortcutUserId String
 
     GitHubRepo     GitHubRepo @relation(fields: [githubRepoId], references: [repoId])
     githubRepoId   BigInt
     githubApiKey   String
     githubApiKeyIV String
 
-    LinearTeam     LinearTeam @relation(fields: [linearTeamId], references: [teamId])
-    linearTeamId   String
-    linearApiKey   String
-    linearApiKeyIV String
+    ShortcutTeam     ShortcutTeam @relation(fields: [shortcutTeamId], references: [teamId])
+    shortcutTeamId   String
+    shortcutApiKey   String
+    shortcutApiKeyIV String
 
-    @@unique([githubUserId, linearUserId, githubRepoId, linearTeamId])
+    @@unique([githubUserId, shortcutUserId, githubRepoId, shortcutTeamId])
     @@map("syncs")
 }
 
@@ -89,11 +89,11 @@ model User {
     githubUsername String
     githubEmail    String?
 
-    linearUserId   String
-    linearUsername String
-    linearEmail    String?
+    shortcutUserId   String
+    shortcutUsername String
+    shortcutEmail    String?
 
-    @@unique([githubUserId, linearUserId])
+    @@unique([githubUserId, shortcutUserId])
     @@map("users")
 }
 
@@ -101,14 +101,15 @@ model Milestone {
     id String @id @default(cuid())
 
     milestoneId Int
-    cycleId     String
+    iterationId String?
+    epicId      String?
 
     GitHubRepo   GitHubRepo @relation(fields: [githubRepoId], references: [repoId])
     githubRepoId BigInt
 
-    LinearTeam   LinearTeam @relation(fields: [linearTeamId], references: [teamId])
-    linearTeamId String
+    ShortcutTeam   ShortcutTeam @relation(fields: [shortcutTeamId], references: [teamId])
+    shortcutTeamId String
 
-    @@unique([milestoneId, githubRepoId, cycleId, linearTeamId])
+    @@unique([milestoneId, githubRepoId, shortcutTeamId])
     @@map("milestones")
 }

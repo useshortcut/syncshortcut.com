@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import prisma from "../../../prisma";
 
-// POST /api/linear/save
+// POST /api/shortcut/save
 export default async function handle(
     req: NextApiRequest,
     res: NextApiResponse
@@ -17,9 +17,9 @@ export default async function handle(
         teamId,
         teamName,
         publicLabelId,
-        canceledStateId,
+        archivedStateId,
         doneStateId,
-        toDoStateId
+        startedStateId
     } = JSON.parse(req.body);
 
     if (!teamId) {
@@ -31,7 +31,7 @@ export default async function handle(
             .status(400)
             .send({ error: "Failed to save team: missing team name" });
     } else if (
-        [publicLabelId, canceledStateId, doneStateId, toDoStateId].some(
+        [publicLabelId, archivedStateId, doneStateId, startedStateId].some(
             id => id === undefined
         )
     ) {
@@ -41,22 +41,22 @@ export default async function handle(
     }
 
     try {
-        const result = await prisma.linearTeam.upsert({
+        const result = await prisma.shortcutTeam.upsert({
             where: { teamId: teamId },
             update: {
                 teamName,
                 publicLabelId,
-                canceledStateId,
+                archivedStateId,
                 doneStateId,
-                toDoStateId
+                startedStateId
             },
             create: {
                 teamId,
                 teamName,
                 publicLabelId,
-                canceledStateId,
+                archivedStateId,
                 doneStateId,
-                toDoStateId
+                startedStateId
             }
         });
 

@@ -1,48 +1,39 @@
 import { GitHubRepo, MilestoneState } from "../typings";
 import { getWebhookURL } from ".";
-import { GITHUB, LINEAR } from "./constants";
+import { GITHUB } from "./constants";
 
 export const getGitHubFooter = (userName: string): string => {
-    // To avoid exposing a user email if their username is an email address
     const sanitizedUsername = userName.split("@")?.[0];
-
-    return `\n\n<!-- From ${sanitizedUsername} on Linear -->`;
+    return `\n\n<!-- From ${sanitizedUsername} on Shortcut -->`;
 };
 
-export const getGithubFooterWithLinearCommentId = (
+export const getGithubFooterWithShortcutCommentId = (
     userName: string,
     commentId: string
 ): string => {
-    // To avoid exposing a user email if their username is an email address
     const sanitizedUsername = userName.split("@")?.[0];
-
-    return `\n\n<!-- From ${sanitizedUsername} on Linear. LinearCommentId:${commentId}: -->`;
+    return `\n\n<!-- From ${sanitizedUsername} on Shortcut. ShortcutCommentId:${commentId}: -->`;
 };
 
 export const getGitHubTokenURL = (): string => {
     const scopes = GITHUB.SCOPES.join(",");
     const description = GITHUB.TOKEN_NOTE.split(" ").join("%20");
     const tokenURL = `${GITHUB.NEW_TOKEN_URL}?scopes=${scopes}&description=${description}`;
-
     return tokenURL;
 };
 
 export const getGitHubAuthURL = (verificationCode: string): string => {
-    // Specify OAuth app and scopes
     const params = {
         client_id: GITHUB.OAUTH_ID,
         redirect_uri: window.location.origin,
         scope: GITHUB.SCOPES.join(" "),
         state: verificationCode
     };
-
-    // Combine params in a URL-friendly string
     const authURL = Object.keys(params).reduce(
         (url, param, i) =>
             `${url}${i == 0 ? "?" : "&"}${param}=${params[param]}`,
         GITHUB.OAUTH_URL
     );
-
     return authURL;
 };
 
@@ -73,8 +64,8 @@ export const saveGitHubContext = async (
         body: JSON.stringify({
             repoName: repo.name,
             label: {
-                name: LINEAR.GITHUB_LABEL,
-                color: LINEAR.GITHUB_LABEL_COLOR
+                name: "Shortcut Label",
+                color: "000000"
             }
         })
     });
@@ -312,14 +303,14 @@ export const updateMilestone = async (
     return response;
 };
 
-export const setIssueMilestone = async (
+export const setStoryMilestone = async (
     token: string,
     repoName: string,
-    issueNumber: bigint,
+    storyNumber: bigint,
     milestoneId: number | null
 ): Promise<Response> => {
     const response = await fetch(
-        `https://api.github.com/repos/${repoName}/issues/${issueNumber}`,
+        `https://api.github.com/repos/${repoName}/issues/${storyNumber}`,
         {
             headers: {
                 Authorization: `Bearer ${token}`,
