@@ -11,9 +11,15 @@ export interface GitHubContext {
     apiKey: string;
 }
 
+export interface ShortcutContext {
+    userId: string;
+    teamId: string;
+    apiKey: string;
+}
+
 export interface Sync {
     id: string;
-    LinearTeam: { id: string; teamName: string };
+    ShortcutTeam: { id: string; teamName: string };
     GitHubRepo: { id: string; repoName: string };
 }
 

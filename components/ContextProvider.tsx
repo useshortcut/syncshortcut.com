@@ -1,5 +1,5 @@
 import React, { createContext, useState } from "react";
-import { GitHubContext, GitHubRepo, LinearContext, Sync } from "../typings";
+import { GitHubContext, GitHubRepo, ShortcutContext, Sync } from "../typings";
 
 interface IProps {
     syncs: Sync[];
@@ -8,8 +8,8 @@ interface IProps {
     setGitHubToken: (token: string) => void;
     gitHubUser: GitHubRepo;
     setGitHubUser: (user: GitHubRepo) => void;
-    linearContext: LinearContext;
-    setLinearContext: (linearContext: LinearContext) => void;
+    shortcutContext: ShortcutContext;
+    setShortcutContext: (shortcutContext: ShortcutContext) => void;
     gitHubContext: GitHubContext;
     setGitHubContext: (context: GitHubContext) => void;
 }
@@ -20,7 +20,7 @@ const ContextProvider = ({ children }: { children: React.ReactNode }) => {
     const [syncs, setSyncs] = useState<Sync[]>([]);
     const [gitHubToken, setGitHubToken] = useState("");
     const [gitHubUser, setGitHubUser] = useState<GitHubRepo>();
-    const [linearContext, setLinearContext] = useState<LinearContext>({
+    const [shortcutContext, setShortcutContext] = useState<ShortcutContext>({
         userId: "",
         teamId: "",
         apiKey: ""
@@ -40,8 +40,8 @@ const ContextProvider = ({ children }: { children: React.ReactNode }) => {
                 setGitHubToken,
                 gitHubUser,
                 setGitHubUser,
-                linearContext,
-                setLinearContext,
+                shortcutContext,
+                setShortcutContext,
                 gitHubContext,
                 setGitHubContext
             }}

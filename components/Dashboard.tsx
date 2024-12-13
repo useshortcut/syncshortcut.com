@@ -1,8 +1,8 @@
 import { Cross1Icon, InfoCircledIcon, WidthIcon } from "@radix-ui/react-icons";
 import React, { useContext, useEffect, useState } from "react";
-import { LINEAR } from "../utils/constants";
+import { SHORTCUT } from "../utils/constants";
 import { updateGitHubWebhook } from "../utils/github";
-import { getLinearWebhook, updateLinearWebhook } from "../utils/linear";
+import { getShortcutWebhook, updateShortcutWebhook } from "../utils/shortcut";
 import { Context } from "./ContextProvider";
 import Tooltip from "./Tooltip";
 
@@ -10,7 +10,7 @@ const options = ["Cycle", "Project"] as const;
 type Option = (typeof options)[number];
 
 const Dashboard = () => {
-    const { syncs, setSyncs, gitHubContext, linearContext } =
+    const { syncs, setSyncs, gitHubContext, shortcutContext } =
         useContext(Context);
 
     const [loading, setLoading] = useState(false);
@@ -20,9 +20,9 @@ const Dashboard = () => {
     useEffect(() => {
         if (!syncs?.length) return;
 
-        getLinearWebhook(
-            linearContext.apiKey,
-            syncs[0].LinearTeam.teamName
+        getShortcutWebhook(
+            shortcutContext.apiKey,
+            syncs[0].ShortcutTeam.teamName
         ).then(res => {
             if (res.resourceTypes.includes("Cycle")) {
                 setMilestoneAction("Cycle");
@@ -71,12 +71,12 @@ const Dashboard = () => {
                             : { remove_events: ["milestone"] })
                     }
                 );
-                await updateLinearWebhook(
-                    linearContext.apiKey,
-                    sync.LinearTeam.teamName,
+                await updateShortcutWebhook(
+                    shortcutContext.apiKey,
+                    sync.ShortcutTeam.teamName,
                     {
                         resourceTypes: [
-                            ...LINEAR.WEBHOOK_EVENTS,
+                            ...SHORTCUT.WEBHOOK_EVENTS,
                             ...(milestoneAction ? [milestoneAction] : [])
                         ]
                     }
@@ -102,7 +102,7 @@ const Dashboard = () => {
                 >
                     <div className="flex gap-2">
                         <div className="font-semibold">
-                            {sync.LinearTeam?.teamName}
+                            {sync.ShortcutTeam?.teamName}
                         </div>
                         <WidthIcon className="w-6 h-6" />
                         <div>
@@ -133,7 +133,7 @@ const Dashboard = () => {
                     >
                         <input
                             id={option}
-                            disabled={!linearContext.apiKey}
+                            disabled={!shortcutContext.apiKey}
                             type="checkbox"
                             checked={milestoneAction === option}
                             onChange={e =>
@@ -149,8 +149,8 @@ const Dashboard = () => {
                         </label>
                         <Tooltip
                             content={
-                                !linearContext.apiKey
-                                    ? "Requires connecting to Linear first"
+                                !shortcutContext.apiKey
+                                    ? "Requires connecting to Shortcut first"
                                     : milestoneAction
                                     ? `Will disable ${
                                           option == "Cycle"
