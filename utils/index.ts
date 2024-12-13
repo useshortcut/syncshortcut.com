@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
-import { GitHubContext, LinearContext } from "../typings";
+import { GitHubContext, ShortcutContext } from "../typings";
 import { GENERAL, GITHUB } from "./constants";
 
 export const isDev = (): boolean => {
@@ -9,7 +9,7 @@ export const isDev = (): boolean => {
 export const getWebhookURL = (): string => {
     if (typeof window == "undefined") {
         // TODO: Support ngrok URLs for local development
-        return "https://synclinear.com/api";
+        return "https://syncshortcut.com/api";
     }
 
     if (window.location.hostname === "localhost") return "https://example.com";
@@ -91,18 +91,18 @@ export const replaceGithubComment = (text: string): string => {
 };
 
 export const getSyncFooter = (): string => {
-    return `From [SyncLinear.com](https://synclinear.com)`;
+    return `From [SyncShortcut.com](https://syncshortcut.com)`;
 };
 
-export const legacySyncFooter = `From [Linear-GitHub Sync](https://synclinear.com)`;
+export const legacySyncFooter = `From [Shortcut-GitHub Sync](https://syncshortcut.com)`;
 
 export const saveSync = async (
-    linearContext: LinearContext,
+    shortcutContext: ShortcutContext,
     githubContext: GitHubContext
 ) => {
     const data = {
         github: { ...githubContext },
-        linear: { ...linearContext }
+        shortcut: { ...shortcutContext }
     };
 
     const response = await fetch("/api/save", {
