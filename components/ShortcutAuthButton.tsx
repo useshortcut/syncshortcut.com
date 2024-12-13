@@ -1,74 +1,65 @@
 import { CheckIcon, DotsHorizontalIcon } from "@radix-ui/react-icons";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-    LinearContext,
-    LinearObject,
-    LinearTeam,
-    TicketState
-} from "../typings";
+import { ShortcutContext } from "../typings/shortcut.d";
+import { ShortcutMember, ShortcutWorkflowState, ShortcutTeam } from "../typings/shortcut.d";
 import { clearURLParams } from "../utils";
 import { v4 as uuid } from "uuid";
-import { LINEAR } from "../utils/constants";
+import { SHORTCUT } from "../utils/constants";
 import DeployButton from "./DeployButton";
 import {
-    exchangeLinearToken,
-    getLinearContext,
-    checkTeamWebhook,
-    getLinearAuthURL,
-    saveLinearContext,
-    setLinearWebhook
-} from "../utils/linear";
+    getShortcutWebhook,
+    updateShortcutWebhook,
+    getShortcutContext,
+    getShortcutAuthURL,
+    exchangeShortcutToken
+} from "../utils/shortcut";
 import Select from "./Select";
 
 interface IProps {
     onAuth: (apiKey: string) => void;
-    onDeployWebhook: (context: LinearContext) => void;
+    onDeployWebhook: (context: ShortcutContext) => void;
     restoredApiKey: string;
     restored: boolean;
 }
 
-const LinearAuthButton = ({
+const ShortcutAuthButton = ({
     onAuth,
     onDeployWebhook,
     restoredApiKey,
     restored
 }: IProps) => {
     const [accessToken, setAccessToken] = useState("");
-    const [teams, setTeams] = useState<Array<LinearTeam>>([]);
-    const [chosenTeam, setChosenTeam] = useState<LinearTeam>();
-    const [ticketStates, setTicketStates] = useState<{
-        [key in TicketState]: LinearObject;
+    const [teams, setTeams] = useState<Array<ShortcutTeam>>([]);
+    const [chosenTeam, setChosenTeam] = useState<ShortcutTeam>();
+    const [storyStates, setStoryStates] = useState<{
+        [key in keyof typeof SHORTCUT.STORY_STATES]: ShortcutWorkflowState;
     }>();
-    const [user, setUser] = useState<LinearObject>();
+    const [user, setUser] = useState<ShortcutMember>();
     const [deployed, setDeployed] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    // If present, exchange the temporary auth code for an access token
     useEffect(() => {
         if (accessToken) return;
 
-        // If the URL params have an auth code, we're returning from the Linear auth page
         const authResponse = new URLSearchParams(window.location.search);
         if (!authResponse.has("code")) return;
 
-        // Ensure the verification code is unchanged
-        const verificationCode = localStorage.getItem("linear-verification");
-        if (!authResponse.get("state")?.includes("linear")) return;
+        const verificationCode = localStorage.getItem("shortcut-verification");
+        if (!authResponse.get("state")?.includes("shortcut")) return;
         if (authResponse.get("state") !== verificationCode) {
-            alert("Linear auth returned an invalid code. Please try again.");
+            alert("Shortcut auth returned an invalid code. Please try again.");
             return;
         }
 
         setLoading(true);
 
-        // Exchange auth code for access token
         const refreshToken = authResponse.get("code");
-        exchangeLinearToken(refreshToken)
+        exchangeShortcutToken(refreshToken)
             .then(body => {
                 if (body.access_token) setAccessToken(body.access_token);
                 else {
                     clearURLParams();
-                    localStorage.removeItem(LINEAR.STORAGE_KEY);
+                    localStorage.removeItem(SHORTCUT.STORAGE_KEY);
                 }
                 setLoading(false);
             })
@@ -78,22 +69,20 @@ const LinearAuthButton = ({
             });
     }, [accessToken]);
 
-    // Restore the Linear context from local storage
     useEffect(() => {
         if (restoredApiKey) setAccessToken(restoredApiKey);
     }, [restoredApiKey]);
 
-    // Fetch the user ID and available teams when the token is available
     useEffect(() => {
         if (!accessToken) return;
         if (user?.id) return;
 
         onAuth(accessToken);
 
-        getLinearContext(accessToken)
+        getShortcutContext(accessToken)
             .then(res => {
                 if (!res?.data?.teams || !res.data?.viewer)
-                    alert("No Linear user or teams found");
+                    alert("No Shortcut user or teams found");
 
                 setTeams(res.data.teams.nodes);
                 setUser(res.data.viewer);
@@ -101,15 +90,14 @@ const LinearAuthButton = ({
             .catch(err => alert(`Error fetching labels: ${err}`));
     }, [accessToken]);
 
-    // Disable deployment button if the webhook and team are already saved
     useEffect(() => {
         if (!chosenTeam || !accessToken) return;
 
         setLoading(true);
 
-        checkTeamWebhook(chosenTeam.id, chosenTeam.name, accessToken)
+        getShortcutWebhook(accessToken, chosenTeam.name)
             .then(res => {
-                if (res?.webhookExists && res?.teamInDB) {
+                if (res?.resourceTypes?.length) {
                     setDeployed(true);
                     onDeployWebhook({
                         userId: user.id,
@@ -127,35 +115,31 @@ const LinearAuthButton = ({
             });
     }, [chosenTeam, accessToken, user]);
 
-    // Populate default ticket states when available
     useEffect(() => {
-        const states = chosenTeam?.states?.nodes;
+        const states = chosenTeam?.workflow_states;
         if (!states || !states?.length) return;
 
-        setTicketStates({
-            todo: states.find(s => s.name === LINEAR.TICKET_STATES.todo),
-            done: states.find(s => s.name === LINEAR.TICKET_STATES.done),
-            canceled: states.find(s => s.name === LINEAR.TICKET_STATES.canceled)
+        setStoryStates({
+            todo: states.find(s => s.name === SHORTCUT.STORY_STATES.todo),
+            done: states.find(s => s.name === SHORTCUT.STORY_STATES.done),
+            archived: states.find(s => s.name === SHORTCUT.STORY_STATES.archived)
         });
     }, [chosenTeam]);
 
-    const openLinearAuth = () => {
-        // Generate random code to validate against CSRF attack
-        const verificationCode = `linear-${uuid()}`;
-        localStorage.setItem("linear-verification", verificationCode);
+    const openShortcutAuth = () => {
+        const verificationCode = `shortcut-${uuid()}`;
+        localStorage.setItem("shortcut-verification", verificationCode);
 
-        const authURL = getLinearAuthURL(verificationCode);
+        const authURL = getShortcutAuthURL(verificationCode);
         window.location.replace(authURL);
     };
 
     const deployWebhook = useCallback(() => {
         if (!chosenTeam || deployed) return;
 
-        saveLinearContext(accessToken, chosenTeam, ticketStates).catch(err =>
-            alert(`Error saving labels to DB: ${err}`)
-        );
-
-        setLinearWebhook(accessToken, chosenTeam.id)
+        updateShortcutWebhook(accessToken, chosenTeam.name, {
+            resourceTypes: Object.keys(SHORTCUT.STORY_STATES)
+        })
             .then(() => {
                 setDeployed(true);
                 onDeployWebhook({
@@ -181,21 +165,21 @@ const LinearAuthButton = ({
             });
 
         setDeployed(true);
-    }, [accessToken, chosenTeam, deployed, user, ticketStates]);
+    }, [accessToken, chosenTeam, deployed, user]);
 
-    const missingTicketState = useMemo<boolean>(() => {
+    const missingStoryState = useMemo<boolean>(() => {
         return (
-            !ticketStates || Object.values(ticketStates).some(state => !state)
+            !storyStates || Object.values(storyStates).some(state => !state)
         );
-    }, [ticketStates]);
+    }, [storyStates]);
 
     return (
         <div className="center space-y-8 w-80">
             <button
-                onClick={openLinearAuth}
+                onClick={openShortcutAuth}
                 disabled={!!accessToken || loading}
                 className={loading ? "animate-pulse" : ""}
-                arial-label="Authorize with Linear"
+                arial-label="Authorize with Shortcut"
             >
                 {loading ? (
                     <>
@@ -203,7 +187,7 @@ const LinearAuthButton = ({
                         <DotsHorizontalIcon className="w-6 h-6" />
                     </>
                 ) : (
-                    <span>1. Connect Linear</span>
+                    <span>1. Connect Shortcut</span>
                 )}
                 {!!accessToken && <CheckIcon className="w-6 h-6" />}
             </button>
@@ -220,10 +204,10 @@ const LinearAuthButton = ({
                         disabled={loading}
                         placeholder="3. Find your team"
                     />
-                    {chosenTeam?.states?.nodes && (
+                    {chosenTeam?.workflow_states && (
                         <div className="w-full space-y-4 pb-4">
-                            {Object.entries(LINEAR.TICKET_STATES).map(
-                                ([key, label]: [TicketState, string]) => (
+                            {Object.entries(SHORTCUT.STORY_STATES).map(
+                                ([key, label]: [keyof typeof SHORTCUT.STORY_STATES, string]) => (
                                     <div
                                         key={key}
                                         className="flex justify-between items-center gap-4"
@@ -233,20 +217,20 @@ const LinearAuthButton = ({
                                         </p>
                                         <Select
                                             placeholder={
-                                                ticketStates?.[key]?.name ||
+                                                storyStates?.[key]?.name ||
                                                 "Select a label"
                                             }
-                                            values={chosenTeam.states.nodes.map(
+                                            values={chosenTeam.workflow_states.map(
                                                 state => ({
-                                                    value: state.id,
+                                                    value: state.id.toString(),
                                                     label: state.name
                                                 })
                                             )}
                                             onChange={(id: string) =>
-                                                setTicketStates({
-                                                    ...ticketStates,
-                                                    [key]: chosenTeam.states.nodes.find(
-                                                        state => state.id === id
+                                                setStoryStates({
+                                                    ...storyStates,
+                                                    [key]: chosenTeam.workflow_states.find(
+                                                        state => state.id === parseInt(id, 10)
                                                     )
                                                 })
                                             }
@@ -259,7 +243,7 @@ const LinearAuthButton = ({
                     )}
                     {chosenTeam && (
                         <DeployButton
-                            disabled={missingTicketState}
+                            disabled={missingStoryState}
                             loading={loading}
                             deployed={deployed}
                             onDeploy={deployWebhook}
@@ -271,5 +255,5 @@ const LinearAuthButton = ({
     );
 };
 
-export default LinearAuthButton;
+export default ShortcutAuthButton;
 

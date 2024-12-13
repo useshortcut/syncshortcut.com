@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import prisma from "../../prisma";
-import { Sync } from "../../typings";
+import type { Sync } from "../../typings";
 import { GITHUB } from "../../utils/constants";
 
 // POST/DELETE /api/syncs
@@ -31,14 +31,14 @@ export default async function handle(
         }
 
         try {
-            const syncs: Sync[] = await prisma.sync.findMany({
+            const syncs = await prisma.sync.findMany({
                 where: {
                     githubUserId: user.id
                 },
                 // Only return fields that are needed to identify a repo or team
                 select: {
                     id: true,
-                    LinearTeam: {
+                    ShortcutTeam: {
                         select: {
                             id: true,
                             teamName: true

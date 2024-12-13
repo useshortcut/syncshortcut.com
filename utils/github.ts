@@ -303,14 +303,14 @@ export const updateMilestone = async (
     return response;
 };
 
-export const setIssueMilestone = async (
+export const setStoryMilestone = async (
     token: string,
     repoName: string,
-    issueNumber: bigint,
+    storyNumber: bigint,
     milestoneId: number | null
 ): Promise<Response> => {
     const response = await fetch(
-        `https://api.github.com/repos/${repoName}/issues/${issueNumber}`,
+        `https://api.github.com/repos/${repoName}/issues/${storyNumber}`,
         {
             headers: {
                 Authorization: `Bearer ${token}`,

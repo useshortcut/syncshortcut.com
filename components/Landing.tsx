@@ -102,7 +102,7 @@ const Landing = () => {
                         open issues as you
                     </li>
                     <li>
-                        3. Label a Shortcut ticket as <code>Public</code> (or
+                        3. Label a Shortcut story as <code>Public</code> (or
                         label a GitHub issue as <code>shortcut</code>) to mirror
                         it
                     </li>

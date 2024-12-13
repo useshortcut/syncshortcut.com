@@ -7,14 +7,16 @@ export const SECONDS_IN_YEAR = 365 * SECONDS_IN_DAY;
 export const SHORTCUT = {
     API_KEY: process.env.SHORTCUT_API_KEY,
     API_URL: "https://api.app.shortcut.com/api/v3",
+    APP_URL: "https://app.shortcut.com",
     STORAGE_KEY: "shortcut-context",
     GITHUB_LABEL: "shortcut",
     GITHUB_LABEL_COLOR: "#2DA54E",
     WEBHOOK_EVENTS: ["Story", "Comment", "Label"],
-    TICKET_STATES: {
-        started: "Started",
-        done: "Done",
-        archived: "Archived"
+    STORY_URL: "https://app.shortcut.com/story",
+    STORY_STATES: {
+        todo: "unstarted",
+        done: "done",
+        archived: "archived"
     }
 };
 
@@ -34,8 +36,8 @@ export const GITHUB = {
     TOKEN_URL: "https://github.com/login/oauth/access_token",
     SCOPES: ["repo", "write:repo_hook", "read:user", "user:email"],
     NEW_TOKEN_URL: "https://github.com/settings/tokens/new",
-    TOKEN_NOTE: "Linear-GitHub Sync",
-    WEBHOOK_EVENTS: ["issues", "issue_comment", "label"],
+    TOKEN_NOTE: "Shortcut-GitHub Sync",
+    WEBHOOK_EVENTS: ["stories", "story_comment", "label"],
     LIST_REPOS_ENDPOINT:
         "https://api.github.com/user/repos?per_page=100&sort=updated",
     USER_ENDPOINT: "https://api.github.com/user",
@@ -57,7 +59,7 @@ export const GENERAL = {
     CONTRIBUTE_URL: "https://github.com/calcom/syncshortcut.com",
     IMG_TAG_REGEX: /<img.*src=[\'|\"| ]?https?:\/\/(.*?)[\'|\"| ].*\/?>/g,
     INLINE_IMG_TAG_REGEX: /!\[.*?\]\((https:\/\/(?!.*\?signature=).*?)\)/g,
-    SHORTCUT_TICKET_ID_REGEX: /^\[\w{1,5}-\d{1,6}\]\s/,
+    SHORTCUT_STORY_ID_REGEX: /^\[\w{1,5}-\d{1,6}\]\s/,
     LOGIN_KEY: "login",
     SYNCED_ITEMS: [
         {
@@ -90,7 +92,7 @@ export const GENERAL = {
             githubField: "State",
             toGithub: true,
             toShortcut: true,
-            notes: "eg. Closed issue in GitHub will be marked as Done in Shortcut"
+            notes: "eg. Closed story in GitHub will be marked as Done in Shortcut"
         },
         {
             shortcutField: "Comments",
@@ -105,11 +107,11 @@ export const GENERAL = {
             githubField: "Label"
         },
         {
-            shortcutField: "Cycle",
+            shortcutField: "Iteration",
             githubField: "Milestone",
             toGithub: true,
             toShortcut: true,
-            notes: "Optional. Milestone due date syncs to cycle end date."
+            notes: "Optional. Milestone due date syncs to iteration end date."
         }
     ]
 };

@@ -6,7 +6,7 @@ import { getShortcutWebhook, updateShortcutWebhook } from "../utils/shortcut";
 import { Context } from "./ContextProvider";
 import Tooltip from "./Tooltip";
 
-const options = ["Cycle", "Project"] as const;
+const options = ["Iteration", "Epic"] as const;
 type Option = (typeof options)[number];
 
 const Dashboard = () => {
@@ -24,10 +24,10 @@ const Dashboard = () => {
             shortcutContext.apiKey,
             syncs[0].ShortcutTeam.teamName
         ).then(res => {
-            if (res.resourceTypes.includes("Cycle")) {
-                setMilestoneAction("Cycle");
-            } else if (res.resourceTypes.includes("Project")) {
-                setMilestoneAction("Project");
+            if (res.resourceTypes.includes("Iteration")) {
+                setMilestoneAction("Iteration");
+            } else if (res.resourceTypes.includes("Epic")) {
+                setMilestoneAction("Epic");
             }
         });
     }, [syncs]);
@@ -153,9 +153,9 @@ const Dashboard = () => {
                                     ? "Requires connecting to Shortcut first"
                                     : milestoneAction
                                     ? `Will disable ${
-                                          option == "Cycle"
-                                              ? "Project"
-                                              : "Cycle"
+                                          option == "Iteration"
+                                              ? "Epic"
+                                              : "Iteration"
                                       } sync`
                                     : ""
                             }

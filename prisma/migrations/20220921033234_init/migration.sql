@@ -17,7 +17,6 @@ CREATE TABLE "linear_teams" (
     "teamId" TEXT NOT NULL,
     "teamName" TEXT NOT NULL,
     "publicLabelId" TEXT NOT NULL,
-    "canceledStateId" TEXT NOT NULL,
     "doneStateId" TEXT NOT NULL,
     "toDoStateId" TEXT NOT NULL,
 

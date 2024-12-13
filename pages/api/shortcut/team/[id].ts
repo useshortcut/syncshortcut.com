@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import prisma from "../../../../prisma";
 
-// GET /api/linear/team/:id
+// GET /api/shortcut/team/[id]
 export default async function handle(
     req: NextApiRequest,
     res: NextApiResponse
@@ -19,13 +19,15 @@ export default async function handle(
     }
 
     try {
-        const count: number = await prisma.linearTeam.count({
+        const count: number = await prisma.shortcutTeam.count({
             where: { teamId: `${id}` }
         });
 
         return res.status(200).json({ exists: count > 0 });
     } catch (err) {
-        return res.status(404).send({ error: err });
+        return res.status(400).send({
+            error: `Failed to check team with error: ${err.message || ""}`
+        });
     }
 }
 

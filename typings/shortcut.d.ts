@@ -17,7 +17,7 @@ export interface ShortcutStory {
     created_at: string;
     updated_at: string;
     estimate: number | null;
-    project_id: number | null;
+    epic_id: number | null;
     owner_ids: string[];
 }
 
@@ -88,11 +88,26 @@ export interface ShortcutEpic {
     milestone_id: number | null;
     requested_by_id: string;
     owner_ids: string[];
-    project_ids: number[];
+    epic_ids: number[];
+    targetDate: string | null;
     stats: {
         num_points: number;
         num_stories: number;
     };
+}
+
+export interface ShortcutIteration {
+    id: number;
+    name: string;
+    description: string;
+    state: "to do" | "in progress" | "done";
+    started: boolean;
+    started_at: string | null;
+    completed: boolean;
+    completed_at: string | null;
+    number: number;
+    endsAt: string;
+    teamId: string;
 }
 
 export interface ShortcutApiError {
@@ -105,4 +120,16 @@ export interface ShortcutApiResponse<T> {
     data: T;
     next?: string | null;
     total?: number;
+}
+
+export interface ShortcutTeam {
+    id: string;
+    name: string;
+    workflow_states: ShortcutWorkflowState[];
+}
+
+export interface ShortcutContext {
+    userId: string;
+    teamId: string;
+    apiKey: string;
 }

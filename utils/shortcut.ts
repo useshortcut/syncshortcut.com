@@ -1,4 +1,5 @@
 import { SHORTCUT } from "./constants";
+import { ShortcutContext, ShortcutMember, ShortcutWorkflowState, ShortcutTeam } from "../typings/shortcut.d";
 
 export const getShortcutWebhook = async (apiKey: string, teamName: string) => {
     const response = await fetch(`${SHORTCUT.API_URL}/webhooks`, {
@@ -60,4 +61,48 @@ export const updateShortcutWebhook = async (
             throw new Error("Failed to update Shortcut webhook");
         }
     }
+};
+
+export const getShortcutContext = async (token: string) => {
+    const response = await fetch(`${SHORTCUT.API_URL}/member`, {
+        headers: {
+            "Content-Type": "application/json",
+            "Shortcut-Token": token
+        }
+    });
+    const viewer = await response.json();
+
+    const teamsResponse = await fetch(`${SHORTCUT.API_URL}/teams`, {
+        headers: {
+            "Content-Type": "application/json",
+            "Shortcut-Token": token
+        }
+    });
+    const teams = await teamsResponse.json();
+
+    return { data: { teams: { nodes: teams }, viewer } };
+};
+
+export const getShortcutAuthURL = (verificationCode: string): string => {
+    const params = new URLSearchParams({
+        client_id: process.env.NEXT_PUBLIC_SHORTCUT_CLIENT_ID,
+        response_type: "code",
+        state: verificationCode,
+        scope: "api"
+    });
+    return `${SHORTCUT.APP_URL}/oauth/authorize?${params}`;
+};
+
+export const exchangeShortcutToken = async (code: string): Promise<{ access_token: string }> => {
+    const response = await fetch(`${SHORTCUT.API_URL}/oauth/token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            client_id: process.env.NEXT_PUBLIC_SHORTCUT_CLIENT_ID,
+            client_secret: process.env.SHORTCUT_CLIENT_SECRET,
+            code,
+            grant_type: "authorization_code"
+        })
+    });
+    return response.json();
 };

@@ -50,7 +50,7 @@ export async function createStory(teamId: string, data: {
 }): Promise<ShortcutStory> {
     return shortcutApi.post(`stories`, {
         json: {
-            project_id: teamId,
+            epic_id: teamId,
             ...data
         }
     }).json<ShortcutStory>();

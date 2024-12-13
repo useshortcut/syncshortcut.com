@@ -12,12 +12,12 @@ model SyncedIssue {
     id String @id @default(cuid())
 
     githubIssueNumber BigInt
-    shortcutStoryNumber Int    @map("linearIssueNumber")
+    shortcutStoryNumber Int
 
     githubIssueId BigInt
-    shortcutStoryId String    @map("linearIssueId")
+    shortcutStoryId String
 
-    shortcutTeamId String     @map("linearTeamId")
+    shortcutTeamId String
     ShortcutTeam   ShortcutTeam @relation(fields: [shortcutTeamId], references: [teamId])
 
     githubRepoId BigInt
@@ -66,7 +66,7 @@ model Sync {
     id String @id @default(cuid())
 
     githubUserId BigInt
-    shortcutUserId String    @map("linearUserId")
+    shortcutUserId String
 
     GitHubRepo     GitHubRepo @relation(fields: [githubRepoId], references: [repoId])
     githubRepoId   BigInt
@@ -74,9 +74,9 @@ model Sync {
     githubApiKeyIV String
 
     ShortcutTeam     ShortcutTeam @relation(fields: [shortcutTeamId], references: [teamId])
-    shortcutTeamId   String       @map("linearTeamId")
-    shortcutApiKey   String       @map("linearApiKey")
-    shortcutApiKeyIV String       @map("linearApiKeyIV")
+    shortcutTeamId   String
+    shortcutApiKey   String
+    shortcutApiKeyIV String
 
     @@unique([githubUserId, shortcutUserId, githubRepoId, shortcutTeamId])
     @@map("syncs")
@@ -89,9 +89,9 @@ model User {
     githubUsername String
     githubEmail    String?
 
-    shortcutUserId   String  @map("linearUserId")
-    shortcutUsername String  @map("linearUsername")
-    shortcutEmail    String? @map("linearEmail")
+    shortcutUserId   String
+    shortcutUsername String
+    shortcutEmail    String?
 
     @@unique([githubUserId, shortcutUserId])
     @@map("users")
@@ -101,14 +101,15 @@ model Milestone {
     id String @id @default(cuid())
 
     milestoneId Int
-    cycleId     String
+    iterationId String?
+    epicId      String?
 
     GitHubRepo   GitHubRepo @relation(fields: [githubRepoId], references: [repoId])
     githubRepoId BigInt
 
     ShortcutTeam   ShortcutTeam @relation(fields: [shortcutTeamId], references: [teamId])
-    shortcutTeamId String       @map("linearTeamId")
+    shortcutTeamId String
 
-    @@unique([milestoneId, githubRepoId, cycleId, shortcutTeamId])
+    @@unique([milestoneId, githubRepoId, shortcutTeamId])
     @@map("milestones")
 }

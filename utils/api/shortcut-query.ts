@@ -26,13 +26,13 @@ export const shortcutQuery = async (
 
 export const getAttachmentQuery = (
     storyId: number,
-    githubIssueNumber: number,
+    githubStoryNumber: number,
     repoName: string
 ) => {
     return {
         story_id: storyId,
-        description: `GitHub Issue #${githubIssueNumber}`,
-        name: `github.com/${repoName}/issues/${githubIssueNumber}`,
-        url: `https://github.com/${repoName}/issues/${githubIssueNumber}`
+        description: `GitHub Story #${githubStoryNumber}`,
+        name: `github.com/${repoName}/issues/${githubStoryNumber}`,
+        url: `https://github.com/${repoName}/issues/${githubStoryNumber}`
     };
 };

@@ -8,7 +8,7 @@
 CREATE TABLE "milestones" (
     "id" TEXT NOT NULL,
     "milestoneId" INTEGER NOT NULL,
-    "cycleId" TEXT NOT NULL,
+    "iterationId" TEXT NOT NULL,
     "githubRepoId" INTEGER NOT NULL,
     "linearTeamId" TEXT NOT NULL,
 
@@ -16,7 +16,7 @@ CREATE TABLE "milestones" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "milestones_milestoneId_githubRepoId_cycleId_linearTeamId_key" ON "milestones"("milestoneId", "githubRepoId", "cycleId", "linearTeamId");
+CREATE UNIQUE INDEX "milestones_milestoneId_githubRepoId_iterationId_linearTeamId_key" ON "milestones"("milestoneId", "githubRepoId", "iterationId", "linearTeamId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "syncs_githubUserId_linearUserId_githubRepoId_linearTeamId_key" ON "syncs"("githubUserId", "linearUserId", "githubRepoId", "linearTeamId");
