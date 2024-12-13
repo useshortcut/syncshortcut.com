@@ -56,7 +56,7 @@ export const TIMEOUTS = {
 export const GENERAL = {
     APP_NAME: "Shortcut-GitHub Sync",
     APP_URL: "https://syncshortcut.com",
-    CONTRIBUTE_URL: "https://github.com/calcom/syncshortcut.com",
+    CONTRIBUTE_URL: "https://github.com/useshortcut/syncshortcut.com",
     IMG_TAG_REGEX: /<img.*src=[\'|\"| ]?https?:\/\/(.*?)[\'|\"| ].*\/?>/g,
     INLINE_IMG_TAG_REGEX: /!\[.*?\]\((https:\/\/(?!.*\?signature=).*?)\)/g,
     SHORTCUT_STORY_ID_REGEX: /^\[\w{1,5}-\d{1,6}\]\s/,

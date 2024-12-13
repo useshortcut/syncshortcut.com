@@ -2,7 +2,7 @@
 
 Having issues? Read through this guide before raising an issue on the repo to see if any of the following solutions work for you.
 
-- Also be sure to check [issues](https://github.com/calcom/syncshortcut.com/issues) for an open or closed item that relates to the issue you are having.
+- Also be sure to check [issues](https://github.com/useshortcut/syncshortcut.com/issues) for an open or closed item that relates to the issue you are having.
 
 ## Shortcut not syncing data to GitHub
 
@@ -46,4 +46,4 @@ Finally, we can ensure that the webhook GitHub triggers when an event occurs is 
 
 You should see a webhook to `https://syncshortcut.com/api`. Have a look at the **Recent Deliveries** tab.
 
-Are there any webhooks failing? If your integration is not working and you are seeing errors, please [raise an issue](https://github.com/calcom/syncshortcut.com/issues/new) with the body/error message of the webhook request.
+Are there any webhooks failing? If your integration is not working and you are seeing errors, please [raise an issue](https://github.com/useshortcut/syncshortcut.com/issues/new) with the body/error message of the webhook request.
