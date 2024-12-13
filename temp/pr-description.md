@@ -1,25 +1,20 @@
-# Replace Linear with Shortcut Integration
+# Linear to Shortcut Migration
 
-This PR replaces the Linear integration with Shortcut integration across the codebase. Key changes include:
+This PR implements the migration from Linear to Shortcut integration, including:
 
-## UI Changes
-### Shortcut Application Settings
-![Shortcut Application Settings](./public/shortcut-app-settings.png)
-*Updated application settings view showing SyncShortcut installation status*
-
-### Shortcut Webhook Configuration
-![Shortcut Webhook Configuration](./public/shortcut-webhook-settings.png)
-*Updated webhook settings view showing the SyncShortcut webhook endpoint*
-
-## Documentation Updates
-- Updated TROUBLESHOOTING.md with new Shortcut-specific screenshots and instructions
-- Replaced all references to Linear with Shortcut terminology
-- Updated schema diagrams to reflect Shortcut data model
+## Changes
+- Replaced Linear API integration with Shortcut API
+- Updated all terminology (Issue → Story, Project → Epic, Cycle → Iteration)
+- Removed cancelled state references
+- Updated authentication to use API key instead of OAuth
+- Replaced Linear logos with Shortcut logos
+- Updated documentation and troubleshooting guides
+- Added new social media preview images
 
 ## Testing
-- [ ] Tested Shortcut API integration
-- [ ] Verified webhook functionality
-- [ ] Confirmed UI updates display correctly
-- [ ] Validated documentation accuracy
+- [ ] Verify Shortcut API integration
+- [ ] Test webhook functionality
+- [ ] Confirm authentication flow with API key
+- [ ] Check UI components render correctly
 
 Link to Devin run: https://app.devin.ai/sessions/40283498d1484484a65a4aaeae3c35fc
