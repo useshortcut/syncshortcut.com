@@ -1,0 +1,41 @@
+@startuml
+entity "Story" {
+  * id : string
+  --
+  * title : string
+  * description : string
+  * status : string
+  * labels : string[]
+  epic_id : string
+  iteration_id : string
+}
+
+entity "Epic" {
+  * id : string
+  --
+  * name : string
+  * description : string
+}
+
+entity "Iteration" {
+  * id : string
+  --
+  * name : string
+  * start_date : date
+  * end_date : date
+}
+
+entity "GitHubIssue" {
+  * number : int
+  --
+  * title : string
+  * body : string
+  * state : string
+  * labels : string[]
+}
+
+Story }|--|| Epic : belongs to
+Story }|--|| Iteration : belongs to
+Story ||--|| GitHubIssue : syncs with
+
+@enduml
